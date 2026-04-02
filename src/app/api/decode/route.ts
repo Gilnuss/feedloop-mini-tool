@@ -1,0 +1,137 @@
+/**
+ * POST /api/decode — Main pipeline endpoint with Server-Sent Events.
+ *
+ * Accepts: { items?: string[], rawText?: string }
+ * Returns: SSE stream with progress events + final result
+ *
+ * SSE format:
+ *   data: {"type":"progress","stage":"classifying","progress":15,"detail":"3/47"}
+ *   data: {"type":"result","data":{...DecodeResult}}
+ *   data: {"type":"error","message":"..."}
+ */
+
+import { NextRequest } from "next/server";
+import { decodeFeedback } from "@/lib/pipeline";
+import { checkRateLimit, validateInput, checkBodySize, getClientIP, sanitizeItem } from "@/lib/rateLimit";
+import type { ProgressEvent } from "@/lib/types";
+
+// Next.js edge runtime not needed — we want Node.js for longer execution
+export const maxDuration = 60; // seconds (Vercel serverless)
+export const dynamic = "force-dynamic";
+
+export async function POST(req: NextRequest) {
+  const requestId = Math.random().toString(36).slice(2, 10);
+
+  try {
+    // ── Rate limit ──
+    const ip = getClientIP(req.headers);
+    const rateLimitError = checkRateLimit(ip);
+    if (rateLimitError) {
+      return new Response(
+        JSON.stringify({ error: rateLimitError, requestId }),
+        { status: 429, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    // ── Parse body ──
+    const bodyText = await req.text();
+    const bodySizeError = checkBodySize(bodyText.length);
+    if (bodySizeError) {
+      return new Response(
+        JSON.stringify({ error: bodySizeError, requestId }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = JSON.parse(bodyText);
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON body", requestId }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    // ── Extract items ──
+    let rawItems: string[];
+
+    if (Array.isArray(body.items)) {
+      rawItems = body.items.map((i: unknown) => String(i));
+    } else if (typeof body.rawText === "string") {
+      rawItems = body.rawText
+        .split(/\n/)
+        .map((line: string) => line.trim())
+        .filter((line: string) => line.length > 0);
+    } else {
+      return new Response(
+        JSON.stringify({ error: "Request must include 'items' (array) or 'rawText' (string)", requestId }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    // ── Sanitize + validate ──
+    rawItems = rawItems.map(sanitizeItem).filter(item => item.length > 0);
+    const validation = validateInput(rawItems);
+    if ("error" in validation) {
+      return new Response(
+        JSON.stringify({ error: validation.error, requestId }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    // ── SSE stream ──
+    const encoder = new TextEncoder();
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        const send = (data: Record<string, unknown>) => {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        };
+
+        try {
+          const result = await decodeFeedback(
+            validation.items,
+            (event: ProgressEvent) => {
+              send({ type: "progress", ...event });
+            },
+          );
+
+          // Strip embeddings from response (large, not needed by frontend)
+          const cleanResult = {
+            ...result,
+            clusters: result.clusters.map(c => ({
+              ...c,
+              items: c.items.map(item => ({
+                ...item,
+                embedding: undefined,
+              })),
+            })),
+          };
+
+          send({ type: "result", data: cleanResult });
+        } catch (err) {
+          console.error(`[api/decode] Pipeline error (${requestId}):`, err);
+          send({ type: "error", message: "Analysis failed. Please try again." });
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        "X-Request-Id": requestId,
+      },
+    });
+  } catch (err) {
+    console.error(`[api/decode] Unexpected error (${requestId}):`, err);
+    return new Response(
+      JSON.stringify({ error: "Internal error", requestId }),
+      { status: 500, headers: { "Content-Type": "application/json" } },
+    );
+  }
+}

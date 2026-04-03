@@ -20,10 +20,35 @@ import type { ProgressEvent } from "@/lib/types";
 export const maxDuration = 60; // seconds (Vercel serverless)
 export const dynamic = "force-dynamic";
 
+// ── CORS allowed origins ──
+const ALLOWED_ORIGINS = new Set([
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "https://feedloop-mini-tool.vercel.app",
+  "https://decode.feedloop.dev",
+]);
+
+function isOriginAllowed(origin: string | null): boolean {
+  if (!origin) return false;
+  return ALLOWED_ORIGINS.has(origin);
+}
+
+// ── Pipeline timeout (55s to stay under Vercel's 60s limit) ──
+const PIPELINE_TIMEOUT_MS = 55_000;
+
 export async function POST(req: NextRequest) {
   const requestId = randomUUID().slice(0, 8);
 
   try {
+    // ── CORS origin check ──
+    const origin = req.headers.get("origin");
+    if (!isOriginAllowed(origin)) {
+      return new Response(
+        JSON.stringify({ error: "Origin not allowed", requestId }),
+        { status: 403, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
     // ── Rate limit ──
     const ip = getClientIP(req.headers);
     const rateLimitError = await checkRateLimit(ip);
@@ -91,12 +116,18 @@ export async function POST(req: NextRequest) {
         };
 
         try {
-          const result = await decodeFeedback(
+          // Timeout wrapper — abort if pipeline exceeds 55s (Vercel limit is 60s)
+          const pipelinePromise = decodeFeedback(
             validation.items,
             (event: ProgressEvent) => {
               send({ type: "progress", ...event });
             },
           );
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Pipeline timeout")), PIPELINE_TIMEOUT_MS),
+          );
+
+          const result = await Promise.race([pipelinePromise, timeoutPromise]);
 
           // Strip embeddings + raw text from response (security + size)
           const cleanResult = {
@@ -114,7 +145,10 @@ export async function POST(req: NextRequest) {
           send({ type: "result", data: cleanResult });
         } catch (err) {
           console.error(`[api/decode] Pipeline error (${requestId}):`, err);
-          send({ type: "error", message: "Analysis failed. Please try again." });
+          const message = err instanceof Error && err.message === "Pipeline timeout"
+            ? "Analysis timed out. Try with fewer items."
+            : "Analysis failed. Please try again.";
+          send({ type: "error", message });
         } finally {
           controller.close();
         }
@@ -127,6 +161,7 @@ export async function POST(req: NextRequest) {
         "Cache-Control": "no-cache, no-transform",
         Connection: "keep-alive",
         "X-Request-Id": requestId,
+        "Access-Control-Allow-Origin": origin!,
       },
     });
   } catch (err) {

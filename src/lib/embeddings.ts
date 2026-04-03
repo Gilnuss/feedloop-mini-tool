@@ -13,12 +13,17 @@ interface EmbeddingResponse {
   usage?: { total_tokens: number; cost?: number };
 }
 
+const MAX_TEXT_LENGTH = 2000;
+
 /**
  * Generate a 1024-dim embedding for a single text via OpenRouter.
  */
 export async function getEmbedding(text: string): Promise<number[]> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error("OPENROUTER_API_KEY is not set");
+
+  // Defense-in-depth: truncate oversized text before sending to API
+  const truncatedText = text.slice(0, MAX_TEXT_LENGTH);
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     const res = await fetch("https://openrouter.ai/api/v1/embeddings", {
@@ -29,7 +34,7 @@ export async function getEmbedding(text: string): Promise<number[]> {
       },
       body: JSON.stringify({
         model: "openai/text-embedding-3-small",
-        input: text,
+        input: truncatedText,
         dimensions: TARGET_DIMS,
       }),
       signal: AbortSignal.timeout(TIMEOUT_MS),

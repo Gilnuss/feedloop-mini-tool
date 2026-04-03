@@ -1,7 +1,6 @@
 "use client";
 
-import { useRef } from "react";
-import { extractFeedbackFromCSV } from "@/lib/csvParser";
+import { CsvUpload } from "./CsvUpload";
 
 // Sample data — first 15 items from our Notion test set
 const SAMPLE_ITEMS = [
@@ -39,23 +38,8 @@ export function FeedbackInput({
   onDecode,
   onLoadSample,
 }: Props) {
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const handleCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const text = await file.text();
-    const { items, detectedColumn } = extractFeedbackFromCSV(text);
-
-    if (items.length === 0) {
-      alert("No feedback items found in CSV.");
-      return;
-    }
-
+  const handleCsvItems = (items: string[]) => {
     setInputText(items.join("\n"));
-    // Reset file input
-    if (fileRef.current) fileRef.current.value = "";
   };
 
   return (
@@ -96,22 +80,7 @@ export function FeedbackInput({
 
       {/* Buttons */}
       <div className="flex items-center gap-3 w-full">
-        <button
-          onClick={() => fileRef.current?.click()}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#1A1A1A] border border-[#27272A] rounded-lg text-sm text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-          </svg>
-          Upload CSV
-        </button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".csv"
-          className="hidden"
-          onChange={handleCSV}
-        />
+        <CsvUpload onItemsSelected={handleCsvItems} />
 
         <button
           onClick={() => onLoadSample(SAMPLE_ITEMS)}

@@ -25,8 +25,9 @@ const BUG_SCHEMA = {
       summary: { type: "string" as const },
       severity: { type: "string" as const, enum: ["critical", "high", "medium", "low"] },
       acceptanceCriteria: { type: "array" as const, items: { type: "string" as const } },
+      followUpQuestions: { type: "array" as const, items: { type: "string" as const } },
     },
-    required: ["title", "summary", "severity", "acceptanceCriteria"],
+    required: ["title", "summary", "severity", "acceptanceCriteria", "followUpQuestions"],
     additionalProperties: false,
   },
 };
@@ -40,8 +41,9 @@ const FEATURE_SCHEMA = {
       summary: { type: "string" as const },
       severity: { type: "string" as const, enum: ["critical", "high", "medium", "low"] },
       acceptanceCriteria: { type: "array" as const, items: { type: "string" as const } },
+      followUpQuestions: { type: "array" as const, items: { type: "string" as const } },
     },
-    required: ["title", "summary", "severity", "acceptanceCriteria"],
+    required: ["title", "summary", "severity", "acceptanceCriteria", "followUpQuestions"],
     additionalProperties: false,
   },
 };
@@ -55,8 +57,9 @@ const EPIC_SCHEMA = {
       summary: { type: "string" as const },
       severity: { type: "string" as const, enum: ["critical", "high", "medium", "low"] },
       stories: { type: "array" as const, items: { type: "string" as const } },
+      followUpQuestions: { type: "array" as const, items: { type: "string" as const } },
     },
-    required: ["title", "summary", "severity", "stories"],
+    required: ["title", "summary", "severity", "stories", "followUpQuestions"],
     additionalProperties: false,
   },
 };
@@ -71,6 +74,7 @@ export interface BugTicketSummary {
   severity: "critical" | "high" | "medium" | "low";
   acceptanceCriteria: string[];
   stories: string[];
+  followUpQuestions: string[];
 }
 
 export interface FeatureTicketSummary {
@@ -81,6 +85,7 @@ export interface FeatureTicketSummary {
   severity: "critical" | "high" | "medium" | "low";
   acceptanceCriteria: string[];
   stories: string[];
+  followUpQuestions: string[];
 }
 
 export interface EpicSummary {
@@ -91,6 +96,7 @@ export interface EpicSummary {
   severity: "critical" | "high" | "medium" | "low";
   acceptanceCriteria: string[];
   stories: string[];
+  followUpQuestions: string[];
 }
 
 export type ClusterSummary = BugTicketSummary | FeatureTicketSummary | EpicSummary;
@@ -127,12 +133,15 @@ The topic of these reports is: "${topicLabel}"
 
 Write as if you're filing this in Linear or Jira. A developer should read the title and immediately know what to investigate. The summary should explain the impact in 2-3 sentences. Acceptance criteria should be testable pass/fail checks.
 
+Also write 2-3 follow-up questions a PM should ask affected users to get better reproduction details. These must be SPECIFIC to this bug's topic — not generic questions. Reference the actual problem area.
+
 Respond ONLY with valid JSON:
 {
   "title": "Specific bug title — what's broken (max 60 chars)",
   "summary": "2-3 sentences: what happens, when it happens, who it affects, how bad it is",
   "severity": "critical" | "high" | "medium" | "low",
-  "acceptanceCriteria": ["Specific testable fix 1", "Fix 2", "Fix 3"]
+  "acceptanceCriteria": ["Specific testable fix 1", "Fix 2", "Fix 3"],
+  "followUpQuestions": ["Specific question about this bug's topic 1", "Question 2"]
 }`,
     },
     {
@@ -156,12 +165,15 @@ The topic of these requests is: "${topicLabel}"
 
 The title should describe what users want (not a solution — the need). The summary should explain the pattern: who wants it, why they want it, and what they can't do today. Acceptance criteria should be "when this ships, these things are true."
 
+Also write 2-3 follow-up questions a PM should ask requesting users to validate and scope this feature. These must be SPECIFIC to this feature's topic — not generic. Reference the actual capability being requested.
+
 Respond ONLY with valid JSON:
 {
   "title": "What users need (max 60 chars)",
   "summary": "2-3 sentences: the user need, why it matters, what's missing today",
   "severity": "critical" | "high" | "medium" | "low",
-  "acceptanceCriteria": ["User can do X", "Y works correctly", "Z is supported"]
+  "acceptanceCriteria": ["User can do X", "Y works correctly", "Z is supported"],
+  "followUpQuestions": ["Specific validation question about this feature 1", "Question 2"]
 }`,
     },
     {
@@ -188,12 +200,15 @@ The topic of this feedback is: "${topicLabel}"
 
 The title should name the initiative (what you're going to do about it). The summary should explain the pattern you're seeing across the feedback, why it's strategically important, and the outcome you want. Stories should be specific, shippable work items — each one a ticket a team could pick up in a sprint.
 
+Also write 2-3 follow-up questions a PM should ask users who gave this feedback, to turn the general sentiment into specific actionable requirements. These must be SPECIFIC to this topic — reference the actual area of concern, not generic discovery questions.
+
 Respond ONLY with valid JSON:
 {
   "title": "Strategic initiative name (max 60 chars)",
   "summary": "2-3 sentences: the pattern, why it matters strategically, the desired outcome",
   "severity": "critical" | "high" | "medium" | "low",
-  "stories": ["Specific shippable work item 1", "Work item 2", "Work item 3", "Work item 4"]
+  "stories": ["Specific shippable work item 1", "Work item 2", "Work item 3", "Work item 4"],
+  "followUpQuestions": ["Specific question about this topic 1", "Question 2"]
 }
 
 Write 3-6 stories. Each should be concrete enough to estimate — not vague.`,
@@ -258,6 +273,7 @@ export async function summarizeCluster(cluster: TopicCluster): Promise<ClusterSu
     severity: (v.severity as "critical" | "high" | "medium" | "low") || "medium",
     acceptanceCriteria: kind !== "epic" ? ((v.acceptanceCriteria as string[]) || []).slice(0, 5) : [],
     stories: kind === "epic" ? ((v.stories as string[]) || []).slice(0, 6) : [],
+    followUpQuestions: ((v.followUpQuestions as string[]) || []).slice(0, 3),
   } as ClusterSummary;
 }
 

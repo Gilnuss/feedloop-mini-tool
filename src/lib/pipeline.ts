@@ -114,6 +114,7 @@ export async function decodeFeedback(
       severity: summaries[i].severity,
       acceptanceCriteria: summaries[i].kind !== "epic" ? (summaries[i] as { acceptanceCriteria: string[] }).acceptanceCriteria : [],
       stories: summaries[i].kind === "epic" ? (summaries[i] as { stories: string[] }).stories : [],
+      followUpQuestions: summaries[i].followUpQuestions || [],
       reportCount: tc.totalReportCount,
       dedupCount: dedupCountForCluster,
     };

@@ -36,6 +36,7 @@ export interface Cluster {
   severity: "low" | "medium" | "high" | "critical";
   acceptanceCriteria: string[];  // for bug/feature tickets
   stories: string[];             // for epics — sub-story suggestions
+  followUpQuestions: string[];   // PM lead questions specific to this ticket's topic
   reportCount: number;
   dedupCount: number;            // how many near-identical items were merged in pass 1
 }

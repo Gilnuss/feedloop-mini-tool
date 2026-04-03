@@ -98,69 +98,34 @@ export function IssueCard({ cluster }: { cluster: Cluster }) {
             </div>
           )}
 
-          {/* PM Guidance — lead questions for actionable follow-up */}
-          {cluster.kind === "epic" && (
-            <div className="flex flex-col gap-2.5 bg-purple-500/5 border border-purple-500/10 rounded-lg p-4">
-              <h5 className="text-[11px] font-semibold text-purple-400 uppercase tracking-wider">
-                💡 Ask Your Users
+          {/* PM Guidance — LLM-generated questions specific to this ticket */}
+          {cluster.followUpQuestions && cluster.followUpQuestions.length > 0 && (
+            <div className={`flex flex-col gap-2.5 rounded-lg p-4 ${
+              cluster.kind === "bug_ticket"
+                ? "bg-red-500/5 border border-red-500/10"
+                : cluster.kind === "feature_ticket"
+                ? "bg-yellow-500/5 border border-yellow-500/10"
+                : "bg-purple-500/5 border border-purple-500/10"
+            }`}>
+              <h5 className={`text-[11px] font-semibold uppercase tracking-wider ${
+                cluster.kind === "bug_ticket"
+                  ? "text-red-400"
+                  : cluster.kind === "feature_ticket"
+                  ? "text-yellow-400"
+                  : "text-purple-400"
+              }`}>
+                💡 {cluster.kind === "bug_ticket"
+                  ? "Ask Affected Users"
+                  : cluster.kind === "feature_ticket"
+                  ? "Validate This Request"
+                  : "Dig Deeper With Users"}
               </h5>
-              <p className="text-[12px] text-zinc-500 leading-relaxed">
-                This feedback is strategic — not a specific bug or feature request. To turn it into actionable tickets, ask your users:
-              </p>
               <div className="flex flex-col gap-1.5">
-                <p className="text-[13px] text-zinc-400 leading-relaxed">
-                  &bull; &ldquo;What specific task were you trying to complete when this became a problem?&rdquo;
-                </p>
-                <p className="text-[13px] text-zinc-400 leading-relaxed">
-                  &bull; &ldquo;What workaround are you using today?&rdquo;
-                </p>
-                <p className="text-[13px] text-zinc-400 leading-relaxed">
-                  &bull; &ldquo;If we fixed this, what would you be able to do that you can&apos;t now?&rdquo;
-                </p>
-              </div>
-            </div>
-          )}
-
-          {cluster.kind === "feature_ticket" && (
-            <div className="flex flex-col gap-2.5 bg-yellow-500/5 border border-yellow-500/10 rounded-lg p-4">
-              <h5 className="text-[11px] font-semibold text-yellow-400 uppercase tracking-wider">
-                💡 Validate This Request
-              </h5>
-              <p className="text-[12px] text-zinc-500 leading-relaxed">
-                Before building, confirm the need with your users:
-              </p>
-              <div className="flex flex-col gap-1.5">
-                <p className="text-[13px] text-zinc-400 leading-relaxed">
-                  &bull; &ldquo;How often do you run into this? Daily, weekly, occasionally?&rdquo;
-                </p>
-                <p className="text-[13px] text-zinc-400 leading-relaxed">
-                  &bull; &ldquo;Would you switch to a competitor if they had this?&rdquo;
-                </p>
-                <p className="text-[13px] text-zinc-400 leading-relaxed">
-                  &bull; &ldquo;Show me how you&apos;d use this — walk me through the flow.&rdquo;
-                </p>
-              </div>
-            </div>
-          )}
-
-          {cluster.kind === "bug_ticket" && (
-            <div className="flex flex-col gap-2.5 bg-red-500/5 border border-red-500/10 rounded-lg p-4">
-              <h5 className="text-[11px] font-semibold text-red-400 uppercase tracking-wider">
-                💡 Get Reproduction Details
-              </h5>
-              <p className="text-[12px] text-zinc-500 leading-relaxed">
-                To fix this faster, gather from affected users:
-              </p>
-              <div className="flex flex-col gap-1.5">
-                <p className="text-[13px] text-zinc-400 leading-relaxed">
-                  &bull; &ldquo;What device/browser were you using?&rdquo;
-                </p>
-                <p className="text-[13px] text-zinc-400 leading-relaxed">
-                  &bull; &ldquo;Can you show me the exact steps to reproduce it?&rdquo;
-                </p>
-                <p className="text-[13px] text-zinc-400 leading-relaxed">
-                  &bull; &ldquo;Did this start recently, or has it always been like this?&rdquo;
-                </p>
+                {cluster.followUpQuestions.map((q, i) => (
+                  <p key={i} className="text-[13px] text-zinc-400 leading-relaxed">
+                    &bull; &ldquo;{q}&rdquo;
+                  </p>
+                ))}
               </div>
             </div>
           )}

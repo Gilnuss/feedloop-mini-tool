@@ -197,7 +197,12 @@ Stories must be CONCRETE ENGINEERING WORK ITEMS that a developer can pick up —
 Bad story: "Run a 2-week release quality sprint" or "Conduct user research"
 Good story: "Add a pre-charge confirmation modal that shows itemized costs before billing"
 
-Write exactly 2-3 stories. No more.
+Scale stories to the feedback volume:
+- 1-3 feedback items → 2 stories max
+- 4-7 feedback items → 3 stories max
+- 8-15 feedback items → 4 stories max
+- 16+ feedback items → 5 stories max
+For this cluster: ${items.length} items → write up to ${items.length <= 3 ? 2 : items.length <= 7 ? 3 : items.length <= 15 ? 4 : 5} stories. Each must be distinct — don't pad.
 
 Also write 2-3 follow-up questions a PM should ask users to turn this vague feedback into specific requirements. Questions must be SPECIFIC to this topic.
 
@@ -206,7 +211,7 @@ Respond ONLY with valid JSON:
   "title": "Initiative name (max 60 chars)",
   "summary": "2-3 sentences",
   "severity": "critical" | "high" | "medium" | "low",
-  "stories": ["Concrete dev work item 1", "Work item 2", "Work item 3"],
+  "stories": ["Concrete dev work item 1", "Work item 2"],
   "followUpQuestions": ["Specific question 1", "Question 2"]
 }`,
     },
@@ -285,7 +290,7 @@ export async function summarizeCluster(cluster: TopicCluster): Promise<ClusterSu
     type: kind === "bug_ticket" ? "bug" : kind === "feature_ticket" ? "feature" : "feedback",
     severity: (v.severity as "critical" | "high" | "medium" | "low") || "medium",
     acceptanceCriteria: kind !== "epic" ? ((v.acceptanceCriteria as string[]) || []).slice(0, 5) : [],
-    stories: kind === "epic" ? ((v.stories as string[]) || []).slice(0, 3) : [],
+    stories: kind === "epic" ? ((v.stories as string[]) || []).slice(0, 5) : [],
     followUpQuestions: ((v.followUpQuestions as string[]) || []).slice(0, 3),
   } as ClusterSummary;
 }

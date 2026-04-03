@@ -31,8 +31,8 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#0A0A0A] flex flex-col">
       {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-3 border-b border-[#1A1A1A]">
-        <span className="text-lg font-semibold text-white">
+      <nav className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-[#1A1A1A]">
+        <span className="text-base sm:text-lg font-semibold text-white">
           ⚡ FeedLoop Decode
         </span>
         <a
@@ -46,7 +46,7 @@ export default function Home() {
       </nav>
 
       {/* Content */}
-      <div className="flex-1 flex justify-center px-6 py-12">
+      <div className="flex-1 flex justify-center px-4 sm:px-6 py-8 sm:py-12">
         {state.phase === "input" && (
           <div className="flex items-center">
             <FeedbackInput

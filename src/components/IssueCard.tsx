@@ -8,7 +8,7 @@ import type { Cluster } from "@/lib/types";
  */
 export function IssueCard({ cluster, inline }: { cluster: Cluster; inline?: boolean }) {
   const content = (
-    <div className="flex flex-col gap-4 px-5 py-4">
+    <div className="flex flex-col gap-4 px-3 sm:px-5 py-4">
       {/* Summary */}
       <p className="text-sm text-zinc-300 leading-relaxed">
         {cluster.summary}

@@ -91,7 +91,7 @@ export function CsvUpload({ onItemsSelected }: Props) {
       {/* Column picker modal */}
       {csvState && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-[560px] max-h-[90vh] overflow-y-auto bg-[#141414] border border-[#27272A] rounded-2xl p-7 flex flex-col gap-5 shadow-2xl">
+          <div className="w-full max-w-[560px] mx-4 max-h-[90vh] overflow-y-auto bg-[#141414] border border-[#27272A] rounded-2xl p-5 sm:p-7 flex flex-col gap-5 shadow-2xl">
             {/* Header */}
             <div>
               <h3 className="text-lg font-semibold text-white">
@@ -186,21 +186,21 @@ export function CsvUpload({ onItemsSelected }: Props) {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <span className="text-[11px] font-mono text-zinc-600">
                 {csvState.fileName} · {csvState.rows.length} rows ·{" "}
                 {csvState.columns.length} columns
               </span>
-              <div className="flex gap-2.5">
+              <div className="flex gap-2.5 w-full sm:w-auto">
                 <button
                   onClick={() => setCsvState(null)}
-                  className="px-4 py-2 bg-[#1A1A1A] border border-[#27272A] rounded-lg text-sm text-zinc-400 hover:text-white transition-colors"
+                  className="flex-1 sm:flex-initial px-4 py-2 bg-[#1A1A1A] border border-[#27272A] rounded-lg text-sm text-zinc-400 hover:text-white transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleConfirm}
-                  className="px-5 py-2 bg-purple-600 rounded-lg text-sm font-semibold text-white hover:bg-purple-500 transition-colors"
+                  className="flex-1 sm:flex-initial px-5 py-2 bg-purple-600 rounded-lg text-sm font-semibold text-white hover:bg-purple-500 transition-colors"
                 >
                   Decode {getItemCount()} items →
                 </button>

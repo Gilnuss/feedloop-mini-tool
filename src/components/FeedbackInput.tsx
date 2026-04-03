@@ -206,7 +206,7 @@ export function FeedbackInput({
       </div>
 
       {/* Buttons */}
-      <div className="flex items-center gap-3 w-full relative">
+      <div className="flex flex-wrap items-center gap-3 w-full relative">
         <CsvUpload onItemsSelected={handleCsvItems} />
 
         <div className="relative">
@@ -225,7 +225,7 @@ export function FeedbackInput({
 
           {/* Sample picker dropdown */}
           {showSamplePicker && (
-            <div className="absolute top-full left-0 mt-2 w-72 bg-[#141414] border border-[#27272A] rounded-xl shadow-2xl z-50 overflow-hidden">
+            <div className="absolute top-full left-0 sm:left-0 right-0 sm:right-auto mt-2 w-[calc(100vw-2rem)] sm:w-72 max-w-72 bg-[#141414] border border-[#27272A] rounded-xl shadow-2xl z-50 overflow-hidden">
               <div className="px-3 py-2 border-b border-[#27272A]">
                 <p className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">
                   Real product reviews
@@ -257,7 +257,7 @@ export function FeedbackInput({
         <button
           onClick={onDecode}
           disabled={!canDecode}
-          className="ml-auto flex items-center gap-2 px-6 py-2.5 bg-purple-600 rounded-lg text-sm font-semibold text-white hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="w-full sm:w-auto sm:ml-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-purple-600 rounded-lg text-sm font-semibold text-white hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           Decode my feedback →
         </button>

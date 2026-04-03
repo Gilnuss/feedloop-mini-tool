@@ -26,19 +26,19 @@ export function SharedResultClient({ id }: { id: string }) {
   return (
     <main className="min-h-screen bg-[#0A0A0A] flex flex-col">
       {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-3 border-b border-[#1A1A1A]">
-        <span className="text-lg font-semibold text-white">
+      <nav className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-[#1A1A1A]">
+        <span className="text-base sm:text-lg font-semibold text-white">
           ⚡ FeedLoop Decode
         </span>
         <a
           href="/"
-          className="px-4 py-2 bg-purple-600 rounded-lg text-sm font-semibold text-white hover:bg-purple-500 transition-colors"
+          className="px-3 sm:px-4 py-2 bg-purple-600 rounded-lg text-xs sm:text-sm font-semibold text-white hover:bg-purple-500 transition-colors"
         >
           Try it yourself →
         </a>
       </nav>
 
-      <div className="flex-1 flex items-center justify-center px-6 py-12">
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
         {loading && (
           <div className="flex flex-col items-center gap-3">
             <div className="text-2xl animate-pulse">⏳</div>
@@ -65,7 +65,7 @@ export function SharedResultClient({ id }: { id: string }) {
         {result && (
           <div className="flex flex-col items-center gap-8 w-full">
             {/* Banner */}
-            <div className="w-full max-w-[700px] bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-[#27272A] rounded-xl py-4 px-6 text-center">
+            <div className="w-full max-w-[700px] bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-[#27272A] rounded-xl py-4 px-4 sm:px-6 text-center">
               <p className="text-base font-semibold text-white">
                 {result.stats.inputCount} feedback items decoded into{" "}
                 {result.stats.issueCount} real issues

@@ -25,13 +25,13 @@ function TicketRow({ cluster, isOpen, onToggle }: { cluster: Cluster; isOpen: bo
     <div className="border-t border-[#27272A]">
       <button
         onClick={onToggle}
-        className="flex items-center justify-between w-full px-4 py-2.5 hover:bg-[#1A1A1A]/50 transition-colors"
+        className="flex items-start sm:items-center justify-between w-full px-3 sm:px-4 py-2.5 hover:bg-[#1A1A1A]/50 transition-colors gap-2"
       >
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[13px] text-white truncate">{cluster.title}</span>
+          <span className="text-[13px] text-white text-left line-clamp-2 sm:truncate">{cluster.title}</span>
         </div>
-        <div className="flex items-center gap-3 shrink-0 ml-3">
-          <span className="text-[11px] font-mono text-zinc-600">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <span className="text-[11px] font-mono text-zinc-600 whitespace-nowrap">
             {cluster.reportCount} report{cluster.reportCount !== 1 ? "s" : ""}
             {cluster.dedupCount > 0 && ` · ${cluster.dedupCount} dupes`}
           </span>
@@ -134,7 +134,7 @@ export function ResultsDashboard({ result, onReset, onRunAgain, readOnly }: Prop
     <div className="flex flex-col items-center gap-6 w-full max-w-[880px]">
       {/* Top bar */}
       {!readOnly && (
-        <div className="flex items-center justify-between w-full">
+        <div className="flex flex-wrap items-center justify-between gap-3 w-full">
           <div className="flex items-center gap-2.5">
             <ShareButton resultId={result.id} />
             {onRunAgain && (
@@ -164,8 +164,8 @@ export function ResultsDashboard({ result, onReset, onRunAgain, readOnly }: Prop
       ))}
 
       {/* Upsell */}
-      <div className="w-full border border-dashed border-[#27272A] rounded-xl p-6 flex flex-col items-center gap-5 bg-[#141414]">
-        <p className="text-sm font-medium text-zinc-300">
+      <div className="w-full border border-dashed border-[#27272A] rounded-xl p-4 sm:p-6 flex flex-col items-center gap-5 bg-[#141414]">
+        <p className="text-sm font-medium text-zinc-300 text-center">
           This was a one-time snapshot. With the full pipeline, this runs continuously:
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl text-[13px] text-zinc-500">

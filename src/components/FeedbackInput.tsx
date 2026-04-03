@@ -161,17 +161,14 @@ export function FeedbackInput({
     <div className="flex flex-col items-center gap-6 w-full max-w-[640px]">
       {/* Hero */}
       <div className="flex flex-col items-center gap-4">
-        <span className="px-4 py-1.5 rounded-full bg-[#1A1A1A] text-xs text-zinc-500">
-          Based on SIGIR 2025 research
-        </span>
         <h1 className="text-3xl md:text-4xl font-bold text-white text-center leading-tight">
           Paste your messy feedback.
           <br />
           See what your users are actually saying.
         </h1>
         <p className="text-base text-zinc-400 text-center max-w-[520px]">
-          AI-powered clustering turns 50 raw complaints into 7 actionable
-          tickets in 12 seconds.
+          AI-powered clustering that can turn 50 raw complaints into
+          7 actionable tickets in mere seconds.
         </p>
       </div>
 

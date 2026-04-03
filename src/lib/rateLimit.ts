@@ -78,7 +78,6 @@ export function checkRateLimit(ip: string): string | null {
 
 const HTML_TAG_RE = /<[^>]*>/g;
 const SCRIPT_RE = /<script[\s\S]*?<\/script>/gi;
-const SQL_INJECTION_RE = /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER)\b.*\b(FROM|INTO|TABLE|SET)\b)/gi;
 
 /**
  * Sanitize a single feedback item. Strips HTML, truncates.

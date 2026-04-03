@@ -97,7 +97,8 @@ export async function callLLM(
       await new Promise((r) => setTimeout(r, delay));
       return callLLM(model, messages, { ...options, retries: retries - 1 });
     }
-    throw new Error(`OpenRouter API error ${res.status}: ${text.slice(0, 200)}`);
+    console.error(`[llm] OpenRouter ${res.status}: ${text.slice(0, 200)}`);
+    throw new Error(`LLM API error: ${res.status}`);
   }
 
   const data = (await res.json()) as OpenRouterResponse;

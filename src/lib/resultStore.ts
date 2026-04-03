@@ -23,22 +23,34 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000);
 
+import { randomBytes } from "crypto";
+
+const MAX_STORE_SIZE = 500;
+
 /**
- * Generate a short random ID.
+ * Generate a cryptographically secure random ID.
  */
 function generateId(): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let id = "";
-  for (let i = 0; i < 10; i++) {
-    id += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return id;
+  return randomBytes(16).toString("base64url").slice(0, 20);
 }
 
 /**
  * Save a decode result and return its shareable ID.
  */
 export function saveResult(result: DecodeResult): string {
+  // Evict oldest if at capacity
+  if (store.size >= MAX_STORE_SIZE) {
+    let oldestKey = "";
+    let oldestTime = Infinity;
+    for (const [key, entry] of store) {
+      if (entry.createdAt < oldestTime) {
+        oldestTime = entry.createdAt;
+        oldestKey = key;
+      }
+    }
+    if (oldestKey) store.delete(oldestKey);
+  }
+
   const id = generateId();
   result.id = id;
   store.set(id, { result, createdAt: Date.now() });

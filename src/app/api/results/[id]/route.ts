@@ -27,13 +27,14 @@ export async function GET(
     );
   }
 
-  // Strip embeddings (large, not needed by frontend)
+  // Strip embeddings + raw text from response (security + size)
   const clean = {
     ...result,
     clusters: result.clusters.map(c => ({
       ...c,
       items: c.items.map(item => ({
         ...item,
+        text: undefined,
         embedding: undefined,
       })),
     })),

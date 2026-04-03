@@ -96,7 +96,7 @@ export function IssueCard({ cluster, inline }: { cluster: Cluster; inline?: bool
         <div className="mt-3 max-h-48 overflow-y-auto flex flex-col gap-2 pl-4 border-l-2 border-[#27272A]">
           {cluster.items.map((item, i) => (
             <p key={i} className="text-xs text-zinc-500 leading-relaxed">
-              &ldquo;{item.text.length > 200 ? item.text.slice(0, 200) + "..." : item.text}&rdquo;
+              &ldquo;{(item.cleaned || item.text || "").length > 200 ? (item.cleaned || item.text || "").slice(0, 200) + "..." : (item.cleaned || item.text || "")}&rdquo;
             </p>
           ))}
         </div>

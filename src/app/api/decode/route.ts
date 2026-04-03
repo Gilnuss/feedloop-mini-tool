@@ -11,6 +11,7 @@
  */
 
 import { NextRequest } from "next/server";
+import { randomUUID } from "crypto";
 import { decodeFeedback } from "@/lib/pipeline";
 import { checkRateLimit, validateInput, checkBodySize, getClientIP, sanitizeItem } from "@/lib/rateLimit";
 import type { ProgressEvent } from "@/lib/types";
@@ -20,7 +21,7 @@ export const maxDuration = 60; // seconds (Vercel serverless)
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const requestId = Math.random().toString(36).slice(2, 10);
+  const requestId = randomUUID().slice(0, 8);
 
   try {
     // ── Rate limit ──
@@ -97,13 +98,14 @@ export async function POST(req: NextRequest) {
             },
           );
 
-          // Strip embeddings from response (large, not needed by frontend)
+          // Strip embeddings + raw text from response (security + size)
           const cleanResult = {
             ...result,
             clusters: result.clusters.map(c => ({
               ...c,
               items: c.items.map(item => ({
                 ...item,
+                text: undefined,   // remove original unscrubbed text
                 embedding: undefined,
               })),
             })),

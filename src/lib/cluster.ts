@@ -169,7 +169,7 @@ Rules:
 - Duplicates: "kept" is the item to keep, "removed" is the list of items that are duplicates of it
 - Clear labels (2-5 words)`,
     },
-    { role: "user", content: `Process these ${items.length} feedback items:\n\n${itemList}` },
+    { role: "user", content: `Process these ${items.length} feedback items:\n\n<user_feedback>\n${itemList}\n</user_feedback>` },
   ];
 
   const result = await callLLMStructured<GroupingResult>(MODELS.NANO, messages, GROUPING_SCHEMA);
@@ -203,7 +203,7 @@ Every item must remain assigned to exactly one group.`,
     },
     {
       role: "user",
-      content: `Groups to review:\n\n${constrainedSummary}\n\nOriginal items:\n${itemList}\n\nReturn the final grouping:`,
+      content: `Groups to review:\n\n${constrainedSummary}\n\nOriginal items:\n<user_feedback>\n${itemList}\n</user_feedback>\n\nReturn the final grouping:`,
     },
   ];
 

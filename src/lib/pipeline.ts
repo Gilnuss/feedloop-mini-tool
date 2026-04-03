@@ -41,7 +41,8 @@ export async function decodeFeedback(
   onProgress?: (event: ProgressEvent) => void,
 ): Promise<DecodeResult> {
   const runStart = Date.now();
-  const runId = Math.random().toString(36).slice(2, 12);
+  const { randomUUID } = await import("crypto");
+  const runId = randomUUID().slice(0, 12);
   const emit = (event: ProgressEvent) => onProgress?.(event);
 
   // ── Step 1: PII Scrub ──

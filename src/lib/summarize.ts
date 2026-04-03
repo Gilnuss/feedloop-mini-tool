@@ -231,6 +231,9 @@ function validateSummary(data: unknown, kind: string): Record<string, unknown> {
 
 // ── Main ──
 
+const MAX_ITEMS_FOR_SUMMARIZE = 10; // cap items sent to LLM to prevent timeouts
+const SUMMARIZE_TIMEOUT_MS = 15_000; // 15s per cluster max
+
 export async function summarizeCluster(cluster: TopicCluster): Promise<ClusterSummary> {
   const allItems: FeedbackItem[] = [];
   for (const group of cluster.items) {
@@ -238,24 +241,37 @@ export async function summarizeCluster(cluster: TopicCluster): Promise<ClusterSu
     allItems.push(...group.merged);
   }
 
-  const kind = determineClusterKind(allItems);
+  // Cap items to prevent oversized prompts that cause timeouts
+  // Keep the most diverse items (primaries first, then merged)
+  const itemsForPrompt = allItems.length > MAX_ITEMS_FOR_SUMMARIZE
+    ? allItems.slice(0, MAX_ITEMS_FOR_SUMMARIZE)
+    : allItems;
+
+  const kind = determineClusterKind(allItems); // use ALL items for kind detection
+
   const topicLabel = cluster.label;
 
   let messages: LLMMessage[];
   let schema: { name: string; schema: Record<string, unknown> };
 
   if (kind === "bug_ticket") {
-    messages = buildBugPrompt(allItems, topicLabel);
+    messages = buildBugPrompt(itemsForPrompt, topicLabel);
     schema = BUG_SCHEMA;
   } else if (kind === "feature_ticket") {
-    messages = buildFeaturePrompt(allItems, topicLabel);
+    messages = buildFeaturePrompt(itemsForPrompt, topicLabel);
     schema = FEATURE_SCHEMA;
   } else {
-    messages = buildEpicPrompt(allItems, topicLabel);
+    messages = buildEpicPrompt(itemsForPrompt, topicLabel);
     schema = EPIC_SCHEMA;
   }
 
-  const v = await callLLMStructured<Record<string, unknown>>(MODELS.NANO, messages, schema);
+  // Per-cluster timeout to prevent one slow call from blocking the pipeline
+  const llmPromise = callLLMStructured<Record<string, unknown>>(MODELS.NANO, messages, schema);
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("Summarize timeout")), SUMMARIZE_TIMEOUT_MS),
+  );
+
+  const v = await Promise.race([llmPromise, timeoutPromise]);
 
   return {
     kind,

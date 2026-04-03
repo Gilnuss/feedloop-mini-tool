@@ -162,6 +162,8 @@ export function useDecoder() {
   const reset = useCallback(() => {
     abortRef.current?.abort();
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(INPUT_STORAGE_KEY);
+    setInputText("");
     setState({ phase: "input" });
   }, []);
 

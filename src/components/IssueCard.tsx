@@ -2,56 +2,100 @@
 
 import type { Cluster } from "@/lib/types";
 
+const KIND_LABEL: Record<string, { text: string; color: string }> = {
+  bug_ticket: { text: "BUG", color: "text-red-400" },
+  feature_ticket: { text: "FEATURE", color: "text-yellow-400" },
+  epic: { text: "EPIC", color: "text-purple-400" },
+};
+
+const SEVERITY_DOT: Record<string, string> = {
+  critical: "bg-red-500",
+  high: "bg-orange-500",
+  medium: "bg-yellow-500",
+  low: "bg-green-500",
+};
+
 /**
  * IssueCard — renders the expanded detail of a ticket.
  * When `inline` is true, renders without the outer card wrapper (used inside CRM table rows).
  */
 export function IssueCard({ cluster, inline }: { cluster: Cluster; inline?: boolean }) {
+  const kindInfo = KIND_LABEL[cluster.kind] || KIND_LABEL.epic;
+
   const content = (
-    <div className="flex flex-col gap-4 px-3 sm:px-5 py-4">
+    <div className="flex flex-col gap-5 px-3 sm:px-5 py-5">
+      {/* Title header */}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center gap-2">
+          <span className={`text-[10px] font-mono font-semibold uppercase tracking-wider ${kindInfo.color}`}>
+            {kindInfo.text}
+          </span>
+          <span className={`w-1.5 h-1.5 rounded-full ${SEVERITY_DOT[cluster.severity]}`} />
+          <span className="text-[10px] font-mono text-zinc-600 uppercase">
+            {cluster.severity}
+          </span>
+          <span className="text-[10px] text-zinc-700 ml-auto">
+            {cluster.reportCount} report{cluster.reportCount !== 1 ? "s" : ""}
+            {cluster.dedupCount > 0 && ` · ${cluster.dedupCount} merged`}
+          </span>
+        </div>
+        <h3 className="text-base font-semibold text-white leading-snug">
+          {cluster.title}
+        </h3>
+      </div>
+
       {/* Summary */}
-      <p className="text-sm text-zinc-300 leading-relaxed">
-        {cluster.summary}
-      </p>
+      <div>
+        <h4 className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">
+          Summary
+        </h4>
+        <p className="text-[13px] text-zinc-300 leading-relaxed">
+          {cluster.summary}
+        </p>
+      </div>
 
       {/* Acceptance criteria (bugs + features) */}
       {cluster.acceptanceCriteria.length > 0 && (
-        <div className="flex flex-col gap-2.5 bg-[#0A0A0A] rounded-lg p-4">
-          <h5 className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">
-            Acceptance Criteria
-          </h5>
-          {cluster.acceptanceCriteria.map((ac, i) => (
-            <div key={i} className="flex gap-2.5 items-start">
-              <span className="text-green-400 text-xs mt-0.5 shrink-0">☐</span>
-              <span className="text-[13px] text-zinc-400 leading-relaxed">{ac}</span>
-            </div>
-          ))}
+        <div>
+          <h4 className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">
+            {cluster.kind === "bug_ticket" ? "Definition of Done" : "Acceptance Criteria"}
+          </h4>
+          <div className="flex flex-col gap-2 bg-[#0A0A0A] rounded-lg p-4">
+            {cluster.acceptanceCriteria.map((ac, i) => (
+              <div key={i} className="flex gap-2.5 items-start">
+                <span className="text-green-400 text-xs mt-0.5 shrink-0">☐</span>
+                <span className="text-[13px] text-zinc-400 leading-relaxed">{ac}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Stories (epics) */}
       {cluster.stories.length > 0 && (
-        <div className="flex flex-col gap-2.5 bg-[#0A0A0A] rounded-lg p-4">
-          <h5 className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">
-            Stories
-          </h5>
-          {cluster.stories.map((story, i) => (
-            <div key={i} className="flex gap-2.5 items-start">
-              <span className="text-purple-400 text-xs mt-0.5 shrink-0">→</span>
-              <span className="text-[13px] text-zinc-400 leading-relaxed">{story}</span>
-            </div>
-          ))}
+        <div>
+          <h4 className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">
+            Suggested Work Items
+          </h4>
+          <div className="flex flex-col gap-2 bg-[#0A0A0A] rounded-lg p-4">
+            {cluster.stories.map((story, i) => (
+              <div key={i} className="flex gap-2.5 items-start">
+                <span className="text-purple-400 text-[13px] mt-0.5 shrink-0 font-mono">{i + 1}.</span>
+                <span className="text-[13px] text-zinc-400 leading-relaxed">{story}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Epics: clarifying questions */}
       {cluster.kind === "epic" && cluster.followUpQuestions && cluster.followUpQuestions.length > 0 && (
-        <div className="flex flex-col gap-2.5 bg-purple-500/5 border border-purple-500/10 rounded-lg p-4">
-          <h5 className="text-[11px] font-semibold text-purple-400 uppercase tracking-wider">
+        <div className="bg-purple-500/5 border border-purple-500/10 rounded-lg p-4">
+          <h4 className="text-[11px] font-semibold text-purple-400 uppercase tracking-wider mb-2">
             💡 Clarifying Questions
-          </h5>
-          <p className="text-[12px] text-zinc-500 leading-relaxed">
-            This feedback is too vague for a ticket. Ask your users these questions to get actionable details:
+          </h4>
+          <p className="text-[12px] text-zinc-500 leading-relaxed mb-2">
+            This feedback is too vague for a ticket. Ask your users:
           </p>
           <div className="flex flex-col gap-1.5">
             {cluster.followUpQuestions.map((q, i) => (
@@ -60,13 +104,13 @@ export function IssueCard({ cluster, inline }: { cluster: Cluster; inline?: bool
               </p>
             ))}
           </div>
-          <p className="text-[11px] text-zinc-600 mt-1">
-            With the full FeedLoop pipeline, clarifying questions are sent automatically through your feedback widget.
+          <p className="text-[11px] text-zinc-600 mt-2">
+            With FeedLoop, clarifying questions are sent automatically through your feedback widget.
           </p>
         </div>
       )}
 
-      {/* Features: hint at gathering more detail */}
+      {/* Features: hint */}
       {cluster.kind === "feature_ticket" && (
         <div className="flex items-start gap-2.5 bg-yellow-500/5 border border-yellow-500/10 rounded-lg px-4 py-3">
           <span className="text-yellow-400 text-xs mt-0.5 shrink-0">✦</span>
@@ -77,7 +121,7 @@ export function IssueCard({ cluster, inline }: { cluster: Cluster; inline?: bool
         </div>
       )}
 
-      {/* Bugs: hint at gathering reproduction data */}
+      {/* Bugs: hint */}
       {cluster.kind === "bug_ticket" && (
         <div className="flex items-start gap-2.5 bg-red-500/5 border border-red-500/10 rounded-lg px-4 py-3">
           <span className="text-red-400 text-xs mt-0.5 shrink-0">✦</span>

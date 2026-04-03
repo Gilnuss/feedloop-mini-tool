@@ -186,24 +186,29 @@ function buildEpicPrompt(items: FeedbackItem[], topicLabel: string): LLMMessage[
   return [
     {
       role: "system",
-      content: `You are a VP of Product writing a strategic epic. This isn't a single bug or feature — it's a pattern of user sentiment that needs a coordinated response.
+      content: `You are a senior PM writing a strategic epic. This isn't a single bug or feature — it's a pattern of user sentiment that needs a coordinated response.
 
 The topic of this feedback is: "${topicLabel}"
 
-The title should name the initiative (what you're going to do about it). The summary should explain the pattern you're seeing across the feedback, why it's strategically important, and the outcome you want. Stories should be specific, shippable work items — each one a ticket a team could pick up in a sprint.
+The title should name the initiative clearly. The summary should explain the pattern in 2-3 sentences: what users are saying, why it matters, and the desired outcome.
 
-Also write 2-3 follow-up questions a PM should ask users who gave this feedback, to turn the general sentiment into specific actionable requirements. These must be SPECIFIC to this topic — reference the actual area of concern, not generic discovery questions.
+Stories must be CONCRETE ENGINEERING WORK ITEMS that a developer can pick up — not process suggestions, not "run a sprint," not "conduct an audit." Each story should describe something to BUILD, FIX, or SHIP.
+
+Bad story: "Run a 2-week release quality sprint" or "Conduct user research"
+Good story: "Add a pre-charge confirmation modal that shows itemized costs before billing"
+
+Write exactly 2-3 stories. No more.
+
+Also write 2-3 follow-up questions a PM should ask users to turn this vague feedback into specific requirements. Questions must be SPECIFIC to this topic.
 
 Respond ONLY with valid JSON:
 {
-  "title": "Strategic initiative name (max 60 chars)",
-  "summary": "2-3 sentences: the pattern, why it matters strategically, the desired outcome",
+  "title": "Initiative name (max 60 chars)",
+  "summary": "2-3 sentences",
   "severity": "critical" | "high" | "medium" | "low",
-  "stories": ["Specific shippable work item 1", "Work item 2", "Work item 3", "Work item 4"],
-  "followUpQuestions": ["Specific question about this topic 1", "Question 2"]
-}
-
-Write 3-6 stories. Each should be concrete enough to estimate — not vague.`,
+  "stories": ["Concrete dev work item 1", "Work item 2", "Work item 3"],
+  "followUpQuestions": ["Specific question 1", "Question 2"]
+}`,
     },
     {
       role: "user",
@@ -280,7 +285,7 @@ export async function summarizeCluster(cluster: TopicCluster): Promise<ClusterSu
     type: kind === "bug_ticket" ? "bug" : kind === "feature_ticket" ? "feature" : "feedback",
     severity: (v.severity as "critical" | "high" | "medium" | "low") || "medium",
     acceptanceCriteria: kind !== "epic" ? ((v.acceptanceCriteria as string[]) || []).slice(0, 5) : [],
-    stories: kind === "epic" ? ((v.stories as string[]) || []).slice(0, 6) : [],
+    stories: kind === "epic" ? ((v.stories as string[]) || []).slice(0, 3) : [],
     followUpQuestions: ((v.followUpQuestions as string[]) || []).slice(0, 3),
   } as ClusterSummary;
 }

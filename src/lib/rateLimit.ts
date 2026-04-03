@@ -1,71 +1,73 @@
 /**
  * Rate limiter + input security guards.
- * In-memory for dev. Vercel Edge middleware replaces this in prod.
+ *
+ * Uses Upstash Redis in production (distributed, survives serverless restarts).
+ * Falls back to in-memory for local dev when UPSTASH env vars are not set.
  */
 
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
 const MAX_RUNS_PER_HOUR = 5;
-const BLOCK_AFTER_VIOLATIONS = 3;
-const BLOCK_DURATION_MS = 60 * 60 * 1000; // 1 hour
 const MAX_ITEMS = 100;
 const MIN_ITEMS = 10;
 const MAX_ITEM_LENGTH = 2000;
 const MAX_BODY_SIZE = 500 * 1024; // 500KB
 
-interface RateLimitEntry {
-  count: number;
-  violations: number;
-  resetAt: number;
-  blockedUntil?: number;
-}
+// ── Rate Limiter Setup ──
 
-const limits = new Map<string, RateLimitEntry>();
+let ratelimit: Ratelimit | null = null;
 
-// Cleanup stale entries every 10 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, entry] of limits) {
-    if (now > entry.resetAt && !entry.blockedUntil) {
-      limits.delete(ip);
-    }
-    if (entry.blockedUntil && now > entry.blockedUntil) {
-      limits.delete(ip);
-    }
+// In-memory fallback for dev
+const inMemoryLimits = new Map<string, { count: number; resetAt: number }>();
+
+function getUpstashRatelimit(): Ratelimit | null {
+  if (ratelimit) return ratelimit;
+
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (!url || !token) {
+    console.log("[rateLimit] No Upstash env vars — using in-memory fallback (dev only)");
+    return null;
   }
-}, 10 * 60 * 1000);
+
+  ratelimit = new Ratelimit({
+    redis: new Redis({ url, token }),
+    limiter: Ratelimit.slidingWindow(MAX_RUNS_PER_HOUR, "1 h"),
+    analytics: true,
+    prefix: "feedloop-decode",
+  });
+
+  return ratelimit;
+}
 
 /**
  * Check and consume a rate limit slot. Returns null if allowed, error message if blocked.
  */
-export function checkRateLimit(ip: string): string | null {
-  const now = Date.now();
-  let entry = limits.get(ip);
+export async function checkRateLimit(ip: string): Promise<string | null> {
+  const rl = getUpstashRatelimit();
 
-  if (!entry) {
-    entry = { count: 0, violations: 0, resetAt: now + 60 * 60 * 1000 };
-    limits.set(ip, entry);
-  }
-
-  // Check if blocked
-  if (entry.blockedUntil && now < entry.blockedUntil) {
-    const minutesLeft = Math.ceil((entry.blockedUntil - now) / 60000);
-    return `Rate limit exceeded. Blocked for ${minutesLeft} more minutes.`;
-  }
-
-  // Reset if window expired
-  if (now > entry.resetAt) {
-    entry.count = 0;
-    entry.violations = 0;
-    entry.resetAt = now + 60 * 60 * 1000;
-    entry.blockedUntil = undefined;
-  }
-
-  // Check rate
-  if (entry.count >= MAX_RUNS_PER_HOUR) {
-    entry.violations++;
-    if (entry.violations >= BLOCK_AFTER_VIOLATIONS) {
-      entry.blockedUntil = now + BLOCK_DURATION_MS;
-      return `Rate limit exceeded repeatedly. Blocked for 1 hour.`;
+  if (rl) {
+    // Production: Upstash distributed rate limiting
+    const { success, remaining, reset } = await rl.limit(ip);
+    if (!success) {
+      const minutesLeft = Math.max(1, Math.ceil((reset - Date.now()) / 60000));
+      return `Rate limit: ${MAX_RUNS_PER_HOUR} runs per hour. Try again in ${minutesLeft} minutes. (${remaining} remaining)`;
     }
+    return null;
+  }
+
+  // Dev fallback: in-memory
+  const now = Date.now();
+  let entry = inMemoryLimits.get(ip);
+
+  if (!entry || now > entry.resetAt) {
+    entry = { count: 0, resetAt: now + 60 * 60 * 1000 };
+    inMemoryLimits.set(ip, entry);
+  }
+
+  if (entry.count >= MAX_RUNS_PER_HOUR) {
     const minutesLeft = Math.ceil((entry.resetAt - now) / 60000);
     return `Rate limit: ${MAX_RUNS_PER_HOUR} runs per hour. Try again in ${minutesLeft} minutes.`;
   }
@@ -135,10 +137,13 @@ export function checkBodySize(bodyLength: number): string | null {
 }
 
 /**
- * Extract IP from request headers (Next.js).
+ * Extract IP from request headers.
+ * On Vercel: uses x-vercel-forwarded-for (set by platform, not spoofable).
+ * Fallback: x-forwarded-for, x-real-ip.
  */
 export function getClientIP(headers: Headers): string {
   return (
+    headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
     headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     headers.get("x-real-ip") ||
     "unknown"

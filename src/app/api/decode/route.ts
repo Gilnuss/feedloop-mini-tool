@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   try {
     // ── Rate limit ──
     const ip = getClientIP(req.headers);
-    const rateLimitError = checkRateLimit(ip);
+    const rateLimitError = await checkRateLimit(ip);
     if (rateLimitError) {
       return new Response(
         JSON.stringify({ error: rateLimitError, requestId }),

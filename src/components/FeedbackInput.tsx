@@ -223,34 +223,49 @@ export function FeedbackInput({
             </svg>
           </button>
 
-          {/* Sample picker dropdown */}
+          {/* Sample picker — bottom sheet on mobile, dropdown on desktop */}
           {showSamplePicker && (
-            <div className="absolute top-full left-0 sm:left-0 right-0 sm:right-auto mt-2 w-[calc(100vw-2rem)] sm:w-72 max-w-72 bg-[#141414] border border-[#27272A] rounded-xl shadow-2xl z-50 overflow-hidden">
-              <div className="px-3 py-2 border-b border-[#27272A]">
-                <p className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">
-                  Real product reviews
-                </p>
-              </div>
-              {SAMPLE_DATASETS.map((ds) => (
-                <button
-                  key={ds.id}
-                  onClick={() => handleSamplePick(ds)}
-                  className="w-full text-left px-3 py-2.5 hover:bg-[#1A1A1A] transition-colors border-b border-[#27272A] last:border-b-0"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-white">
-                      {ds.product}
-                    </span>
-                    <span className="text-[11px] font-mono text-zinc-600">
-                      {ds.count} items
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">
-                    {ds.source} · {ds.date}
+            <>
+              {/* Backdrop (mobile) */}
+              <div
+                className="fixed inset-0 bg-black/40 z-40 sm:hidden"
+                onClick={() => setShowSamplePicker(false)}
+              />
+              <div className="fixed bottom-0 left-0 right-0 sm:absolute sm:bottom-auto sm:top-full sm:left-0 sm:right-auto mt-0 sm:mt-2 w-full sm:w-72 bg-[#141414] border-t sm:border border-[#27272A] rounded-t-2xl sm:rounded-xl shadow-2xl z-50 overflow-hidden">
+                <div className="flex items-center justify-between px-4 sm:px-3 py-3 sm:py-2 border-b border-[#27272A]">
+                  <p className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">
+                    Real product reviews
                   </p>
-                </button>
-              ))}
-            </div>
+                  <button
+                    onClick={() => setShowSamplePicker(false)}
+                    className="text-zinc-500 text-sm sm:hidden"
+                  >
+                    ✕
+                  </button>
+                </div>
+                {SAMPLE_DATASETS.map((ds) => (
+                  <button
+                    key={ds.id}
+                    onClick={() => handleSamplePick(ds)}
+                    className="w-full text-left px-4 sm:px-3 py-3.5 sm:py-2.5 hover:bg-[#1A1A1A] transition-colors border-b border-[#27272A] last:border-b-0"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-white">
+                        {ds.product}
+                      </span>
+                      <span className="text-[11px] font-mono text-zinc-600">
+                        {ds.count} items
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 mt-0.5">
+                      {ds.source} · {ds.date}
+                    </p>
+                  </button>
+                ))}
+                {/* Extra padding at bottom for safe area on iPhone */}
+                <div className="h-6 sm:hidden" />
+              </div>
+            </>
           )}
         </div>
 

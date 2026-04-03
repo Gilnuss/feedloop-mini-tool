@@ -66,24 +66,24 @@ export function IssueCard({ cluster, inline }: { cluster: Cluster; inline?: bool
         </div>
       )}
 
-      {/* Features: hint at full PRD */}
+      {/* Features: hint at gathering more detail */}
       {cluster.kind === "feature_ticket" && (
         <div className="flex items-start gap-2.5 bg-yellow-500/5 border border-yellow-500/10 rounded-lg px-4 py-3">
           <span className="text-yellow-400 text-xs mt-0.5 shrink-0">✦</span>
           <p className="text-[12px] text-zinc-500 leading-relaxed">
-            <span className="text-yellow-400 font-medium">Want a complete PRD?</span>{" "}
-            The full pipeline generates user stories, developer constraints, root cause analysis, and quality-scored tickets — ready for your CRM and coding agent.
+            <span className="text-yellow-400 font-medium">Need more detail from users?</span>{" "}
+            FeedLoop sends targeted follow-up questions through your feedback widget — automatically gathering the context needed for a complete PRD, without manual outreach.
           </p>
         </div>
       )}
 
-      {/* Bugs: hint at root cause */}
+      {/* Bugs: hint at gathering reproduction data */}
       {cluster.kind === "bug_ticket" && (
         <div className="flex items-start gap-2.5 bg-red-500/5 border border-red-500/10 rounded-lg px-4 py-3">
           <span className="text-red-400 text-xs mt-0.5 shrink-0">✦</span>
           <p className="text-[12px] text-zinc-500 leading-relaxed">
-            <span className="text-red-400 font-medium">Need root cause?</span>{" "}
-            The full pipeline analyzes your codebase, identifies affected files, and produces developer-ready context — so your coding agent can start fixing immediately.
+            <span className="text-red-400 font-medium">Have questions about this bug?</span>{" "}
+            FeedLoop knows how to gather reproduction details from users — device info, steps, screenshots — sent automatically through your widget so you get actionable data without chasing anyone.
           </p>
         </div>
       )}

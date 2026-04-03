@@ -12,17 +12,53 @@ const SECTION_CONFIG = [
   { kind: "epic", label: "Strategic Epics", dot: "bg-purple-500", countBg: "bg-purple-500/15", countText: "text-purple-400" },
 ] as const;
 
-function TicketSection({
-  config,
-  clusters,
-}: {
-  config: (typeof SECTION_CONFIG)[number];
-  clusters: Cluster[];
-}) {
+const SEVERITY_ORDER = ["critical", "high", "medium", "low"] as const;
+const SEVERITY_STYLES: Record<string, { badge: string; label: string; divider: string }> = {
+  critical: { badge: "bg-red-500", label: "CRITICAL", divider: "text-red-400/60" },
+  high: { badge: "bg-orange-500", label: "HIGH", divider: "text-orange-400/60" },
+  medium: { badge: "bg-yellow-500", label: "MEDIUM", divider: "text-yellow-400/60" },
+  low: { badge: "bg-green-500", label: "LOW", divider: "text-green-400/60" },
+};
+
+function TicketRow({ cluster, isOpen, onToggle }: { cluster: Cluster; isOpen: boolean; onToggle: () => void }) {
+  return (
+    <div className="border-t border-[#27272A]">
+      <button
+        onClick={onToggle}
+        className="flex items-center justify-between w-full px-4 py-2.5 hover:bg-[#1A1A1A]/50 transition-colors"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-[13px] text-white truncate">{cluster.title}</span>
+        </div>
+        <div className="flex items-center gap-3 shrink-0 ml-3">
+          <span className="text-[11px] font-mono text-zinc-600">
+            {cluster.reportCount} report{cluster.reportCount !== 1 ? "s" : ""}
+            {cluster.dedupCount > 0 && ` · ${cluster.dedupCount} dupes`}
+          </span>
+          <span className="text-zinc-600 text-xs">{isOpen ? "▲" : "›"}</span>
+        </div>
+      </button>
+      {isOpen && <IssueCard cluster={cluster} inline />}
+    </div>
+  );
+}
+
+function TicketSection({ config, clusters }: { config: (typeof SECTION_CONFIG)[number]; clusters: Cluster[] }) {
   const [expanded, setExpanded] = useState(true);
   const [expandedTicket, setExpandedTicket] = useState<number | null>(null);
 
   if (clusters.length === 0) return null;
+
+  // Group clusters by severity
+  const bySeverity: Record<string, Cluster[]> = {};
+  for (const c of clusters) {
+    if (!bySeverity[c.severity]) bySeverity[c.severity] = [];
+    bySeverity[c.severity].push(c);
+  }
+
+  // Only show severity headers if there are multiple severity levels
+  const severityLevels = SEVERITY_ORDER.filter(s => bySeverity[s]?.length);
+  const showSeverityHeaders = severityLevels.length > 1;
 
   return (
     <div className="w-full bg-[#141414] border border-[#27272A] rounded-xl overflow-hidden">
@@ -33,55 +69,40 @@ function TicketSection({
       >
         <div className="flex items-center gap-2.5">
           <span className={`w-2 h-2 rounded-full ${config.dot}`} />
-          <span className="text-[13px] font-semibold text-white">
-            {config.label}
-          </span>
+          <span className="text-[13px] font-semibold text-white">{config.label}</span>
           <span className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold ${config.countBg} ${config.countText}`}>
             {clusters.length}
           </span>
         </div>
-        <span className="text-[10px] text-zinc-500">
-          {expanded ? "▼" : "▶"}
-        </span>
+        <span className="text-[10px] text-zinc-500">{expanded ? "▼" : "▶"}</span>
       </button>
 
-      {/* Ticket rows */}
+      {/* Tickets grouped by severity */}
       {expanded && (
         <div>
-          {clusters.map((cluster) => {
-            const isOpen = expandedTicket === cluster.id;
-
+          {severityLevels.map(severity => {
+            const style = SEVERITY_STYLES[severity];
+            const group = bySeverity[severity];
             return (
-              <div key={cluster.id} className="border-t border-[#27272A]">
-                {/* Row */}
-                <button
-                  onClick={() => setExpandedTicket(isOpen ? null : cluster.id)}
-                  className="flex items-center justify-between w-full px-4 py-2.5 hover:bg-[#1A1A1A]/50 transition-colors"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold text-white ${
-                      cluster.severity === "critical" ? "bg-red-500" :
-                      cluster.severity === "high" ? "bg-orange-500" :
-                      cluster.severity === "medium" ? "bg-yellow-500" : "bg-green-500"
-                    }`}>
-                      {cluster.severity === "critical" ? "CRIT" : cluster.severity.toUpperCase()}
-                    </span>
-                    <span className="text-[13px] text-white truncate">
-                      {cluster.title}
+              <div key={severity}>
+                {/* Severity sub-header */}
+                {showSeverityHeaders && (
+                  <div className="flex items-center gap-2 px-4 py-1.5 border-t border-[#27272A] bg-[#0F0F0F]">
+                    <span className={`w-1.5 h-1.5 rounded-full ${style.badge}`} />
+                    <span className={`text-[10px] font-mono font-semibold tracking-wider ${style.divider}`}>
+                      {style.label} ({group.length})
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0 ml-3">
-                    <span className="text-[11px] font-mono text-zinc-600">
-                      {cluster.reportCount} report{cluster.reportCount !== 1 ? "s" : ""}
-                    </span>
-                    <span className="text-zinc-600 text-xs">
-                      {isOpen ? "▲" : "›"}
-                    </span>
-                  </div>
-                </button>
-
-                {/* Expanded detail */}
-                {isOpen && <IssueCard cluster={cluster} inline />}
+                )}
+                {/* Ticket rows */}
+                {group.map(cluster => (
+                  <TicketRow
+                    key={cluster.id}
+                    cluster={cluster}
+                    isOpen={expandedTicket === cluster.id}
+                    onToggle={() => setExpandedTicket(expandedTicket === cluster.id ? null : cluster.id)}
+                  />
+                ))}
               </div>
             );
           })}
@@ -128,10 +149,7 @@ export function ResultsDashboard({ result, onReset, onRunAgain, readOnly }: Prop
               </button>
             )}
           </div>
-          <button
-            onClick={onReset}
-            className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
-          >
+          <button onClick={onReset} className="text-sm text-purple-400 hover:text-purple-300 transition-colors">
             ← New analysis
           </button>
         </div>
@@ -176,12 +194,8 @@ export function ResultsDashboard({ result, onReset, onRunAgain, readOnly }: Prop
             <span><strong className="text-zinc-300">Coding agent ready</strong> — one click to launch an AI agent that opens a PR from the ticket</span>
           </div>
         </div>
-        <a
-          href="https://feedloop.dev"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-1 px-7 py-3 bg-purple-600 rounded-lg text-sm font-semibold text-white hover:bg-purple-500 transition-colors"
-        >
+        <a href="https://feedloop.dev" target="_blank" rel="noopener noreferrer"
+          className="mt-1 px-7 py-3 bg-purple-600 rounded-lg text-sm font-semibold text-white hover:bg-purple-500 transition-colors">
           Try the full pipeline — 14 days free →
         </a>
       </div>

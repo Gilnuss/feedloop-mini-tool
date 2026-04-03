@@ -86,26 +86,46 @@ export function ResultsDashboard({ result, onReset, readOnly }: Props) {
       )}
 
       {/* Locked upsell */}
-      <div className="w-full border border-dashed border-[#27272A] rounded-xl p-6 flex flex-col items-center gap-4 bg-[#141414]">
+      <div className="w-full border border-dashed border-[#27272A] rounded-xl p-6 flex flex-col items-center gap-5 bg-[#141414]">
         <p className="text-sm font-medium text-zinc-300">
-          This was a one-time snapshot. With FeedLoop, this happens automatically:
+          This was a one-time snapshot. With the full pipeline, this runs continuously:
         </p>
-        <div className="grid grid-cols-2 gap-3 w-full max-w-lg text-sm text-zinc-500">
-          <div className="flex items-center gap-2">
-            <span className="text-purple-400">✦</span>
-            Widget captures feedback 24/7
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl text-[13px] text-zinc-500">
+          <div className="flex items-start gap-2.5">
+            <span className="text-purple-400 mt-0.5">✦</span>
+            <span>
+              <strong className="text-zinc-300">Feedback widget</strong> embedded on your site — captures user input 24/7
+            </span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-purple-400">✦</span>
-            Root cause & constraint analysis
+          <div className="flex items-start gap-2.5">
+            <span className="text-purple-400 mt-0.5">✦</span>
+            <span>
+              <strong className="text-zinc-300">Smart dedup & grouping</strong> — duplicates merged, related items clustered automatically
+            </span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-purple-400">✦</span>
-            Auto-synced tickets in your CRM
+          <div className="flex items-start gap-2.5">
+            <span className="text-purple-400 mt-0.5">✦</span>
+            <span>
+              <strong className="text-zinc-300">Clarifying questions</strong> sent back to users through the widget — turns vague feedback into actionable details
+            </span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-purple-400">✦</span>
-            Coding agent ready with one click
+          <div className="flex items-start gap-2.5">
+            <span className="text-purple-400 mt-0.5">✦</span>
+            <span>
+              <strong className="text-zinc-300">Full PRDs & root cause</strong> — developer constraints, code analysis, quality-scored tickets
+            </span>
+          </div>
+          <div className="flex items-start gap-2.5">
+            <span className="text-purple-400 mt-0.5">✦</span>
+            <span>
+              <strong className="text-zinc-300">Synced to your CRM</strong> — tickets land in Jira, Linear, or GitHub Issues automatically
+            </span>
+          </div>
+          <div className="flex items-start gap-2.5">
+            <span className="text-purple-400 mt-0.5">✦</span>
+            <span>
+              <strong className="text-zinc-300">Coding agent ready</strong> — one click to launch an AI agent that opens a PR from the ticket
+            </span>
           </div>
         </div>
         <a

@@ -98,28 +98,15 @@ export function IssueCard({ cluster }: { cluster: Cluster }) {
             </div>
           )}
 
-          {/* PM Guidance — LLM-generated questions specific to this ticket */}
-          {cluster.followUpQuestions && cluster.followUpQuestions.length > 0 && (
-            <div className={`flex flex-col gap-2.5 rounded-lg p-4 ${
-              cluster.kind === "bug_ticket"
-                ? "bg-red-500/5 border border-red-500/10"
-                : cluster.kind === "feature_ticket"
-                ? "bg-yellow-500/5 border border-yellow-500/10"
-                : "bg-purple-500/5 border border-purple-500/10"
-            }`}>
-              <h5 className={`text-[11px] font-semibold uppercase tracking-wider ${
-                cluster.kind === "bug_ticket"
-                  ? "text-red-400"
-                  : cluster.kind === "feature_ticket"
-                  ? "text-yellow-400"
-                  : "text-purple-400"
-              }`}>
-                💡 {cluster.kind === "bug_ticket"
-                  ? "Ask Affected Users"
-                  : cluster.kind === "feature_ticket"
-                  ? "Validate This Request"
-                  : "Dig Deeper With Users"}
+          {/* Epics: clarifying questions to turn vague feedback into actionable items */}
+          {cluster.kind === "epic" && cluster.followUpQuestions && cluster.followUpQuestions.length > 0 && (
+            <div className="flex flex-col gap-2.5 bg-purple-500/5 border border-purple-500/10 rounded-lg p-4">
+              <h5 className="text-[11px] font-semibold text-purple-400 uppercase tracking-wider">
+                💡 Clarifying Questions
               </h5>
+              <p className="text-[12px] text-zinc-500 leading-relaxed">
+                This feedback is too vague for a ticket. Ask your users these questions to get actionable details:
+              </p>
               <div className="flex flex-col gap-1.5">
                 {cluster.followUpQuestions.map((q, i) => (
                   <p key={i} className="text-[13px] text-zinc-400 leading-relaxed">
@@ -127,6 +114,31 @@ export function IssueCard({ cluster }: { cluster: Cluster }) {
                   </p>
                 ))}
               </div>
+              <p className="text-[11px] text-zinc-600 mt-1">
+                With the full FeedLoop pipeline, clarifying questions are sent automatically through your feedback widget — closing the loop without manual follow-up.
+              </p>
+            </div>
+          )}
+
+          {/* Features: hint at full PRD capability */}
+          {cluster.kind === "feature_ticket" && (
+            <div className="flex items-start gap-2.5 bg-yellow-500/5 border border-yellow-500/10 rounded-lg px-4 py-3">
+              <span className="text-yellow-400 text-xs mt-0.5 shrink-0">✦</span>
+              <p className="text-[12px] text-zinc-500 leading-relaxed">
+                <span className="text-yellow-400 font-medium">Want a complete PRD?</span>{" "}
+                The full pipeline generates user stories, developer constraints, root cause analysis, and quality-scored tickets — ready for your CRM and coding agent.
+              </p>
+            </div>
+          )}
+
+          {/* Bugs: hint at root cause capability */}
+          {cluster.kind === "bug_ticket" && (
+            <div className="flex items-start gap-2.5 bg-red-500/5 border border-red-500/10 rounded-lg px-4 py-3">
+              <span className="text-red-400 text-xs mt-0.5 shrink-0">✦</span>
+              <p className="text-[12px] text-zinc-500 leading-relaxed">
+                <span className="text-red-400 font-medium">Need root cause?</span>{" "}
+                The full pipeline analyzes your codebase, identifies affected files, and produces developer-ready context with constraints — so your coding agent can start fixing immediately.
+              </p>
             </div>
           )}
 

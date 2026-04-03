@@ -8,7 +8,7 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-const MAX_RUNS_PER_HOUR = 5;
+const MAX_RUNS_PER_HOUR = 10;
 const MAX_ITEMS = 100;
 const MIN_ITEMS = 10;
 const MAX_ITEM_LENGTH = 2000;

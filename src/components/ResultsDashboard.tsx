@@ -5,6 +5,7 @@ import type { DecodeResult, Cluster } from "@/lib/types";
 import { StatsBoxes } from "./StatsBoxes";
 import { IssueCard } from "./IssueCard";
 import { ShareButton } from "./ShareButton";
+import { track } from "@/lib/track";
 
 const SECTION_CONFIG = [
   { kind: "bug_ticket", label: "Bug Tickets", dot: "bg-red-500", countBg: "bg-red-500/15", countText: "text-red-400" },
@@ -195,6 +196,11 @@ export function ResultsDashboard({ result, onReset, onRunAgain, readOnly }: Prop
           </div>
         </div>
         <a href="https://feedloop.dev" target="_blank" rel="noopener noreferrer"
+          // Only from a run the visitor performed. On a shared /r/[id] page no
+          // landed/ran_*/reached_results fires, so counting the click there
+          // would push resultsToTrial above 1.0. Measuring the share loop needs
+          // its own funnel, not this one.
+          onClick={() => { if (!readOnly) track("clicked_trial"); }}
           className="mt-1 px-7 py-3 bg-purple-600 rounded-lg text-sm font-semibold text-white hover:bg-purple-500 transition-colors">
           Try the full pipeline — 14 days free →
         </a>

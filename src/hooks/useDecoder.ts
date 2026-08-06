@@ -8,9 +8,19 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { DecodeResult } from "@/lib/types";
+import { track } from "@/lib/track";
 
 const STORAGE_KEY = "feedloop-decode-last-result";
 const INPUT_STORAGE_KEY = "feedloop-decode-last-input";
+const SOURCE_STORAGE_KEY = "feedloop-decode-last-source";
+
+/**
+ * Where the current input came from. This is THE distinction the funnel exists
+ * to make: clicking a sample is curiosity, pasting your own feedback is the
+ * value signal — so it has to survive the same localStorage round trip the
+ * input itself does, or a restored sample gets miscounted as own data.
+ */
+type InputSource = "sample" | "own" | "unknown";
 
 export type DecoderPhase =
   | { phase: "input" }
@@ -56,20 +66,56 @@ function cacheInput(text: string) {
   } catch { /* ignore */ }
 }
 
+function loadCachedSource(): InputSource {
+  if (typeof window === "undefined") return "unknown";
+  try {
+    const stored = localStorage.getItem(SOURCE_STORAGE_KEY);
+    return stored === "sample" || stored === "own" ? stored : "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+function cacheSource(source: InputSource) {
+  try {
+    localStorage.setItem(SOURCE_STORAGE_KEY, source);
+  } catch { /* ignore */ }
+}
+
 export function useDecoder() {
   const [state, setState] = useState<DecoderPhase>({ phase: "input" });
-  const [inputText, setInputText] = useState("");
+  const [inputText, setInputTextRaw] = useState("");
   const [initialized, setInitialized] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
+  /**
+   * Held in a ref so decode() reads it without needing to re-create the
+   * callback. Defaults to "unknown" rather than "own" — an unattributed run
+   * must never be silently counted as the value signal.
+   */
+  const inputSourceRef = useRef<InputSource>("unknown");
+
+  /** Anything the user types, pastes or uploads is their own data. */
+  const setInputText = useCallback((text: string) => {
+    inputSourceRef.current = "own";
+    cacheSource("own");
+    setInputTextRaw(text);
+  }, []);
+
   // On mount: restore cached result or input
   useEffect(() => {
+    track("landed", { once: true });
+
     const cached = loadCachedResult();
     if (cached) {
       setState({ phase: "results", data: cached });
     } else {
       const cachedInput = loadCachedInput();
-      if (cachedInput) setInputText(cachedInput);
+      if (cachedInput) {
+        // Restore provenance with the text, so a cached sample stays a sample.
+        inputSourceRef.current = loadCachedSource();
+        setInputTextRaw(cachedInput);
+      }
     }
     setInitialized(true);
   }, []);
@@ -103,6 +149,15 @@ export function useDecoder() {
       return;
     }
 
+    // Fired once the input has passed validation, so it counts real attempts
+    // rather than clicks on a disabled button.
+    const source = inputSourceRef.current;
+    track(
+      source === "sample" ? "ran_sample"
+        : source === "own" ? "ran_own_data"
+        : "ran_unknown_source",
+    );
+
     setState({ phase: "processing", stage: "scrubbing", progress: 0 });
     abortRef.current = new AbortController();
 
@@ -115,12 +170,16 @@ export function useDecoder() {
       });
 
       if (!response.ok) {
+        // 429 is a capacity decision we made, not a product failure — keep it
+        // in its own bucket so it never reads as lack of interest.
+        track(response.status === 429 ? "rate_limited" : "decode_failed");
         const errorData = await response.json().catch(() => ({}));
         setState({ phase: "error", message: errorData.error || `Request failed (${response.status})` });
         return;
       }
 
       if (!response.body) {
+        track("decode_failed");
         setState({ phase: "error", message: "No response stream" });
         return;
       }
@@ -146,15 +205,25 @@ export function useDecoder() {
             } else if (data.type === "result") {
               const result = data.data as DecodeResult;
               cacheResult(result);
+              // Only on a real completion — restoring a cached result on mount
+              // must not count as reaching results.
+              track("reached_results");
               setState({ phase: "results", data: result });
             } else if (data.type === "error") {
+              // `reason` comes from the decode route; fall back to the message
+              // text for responses predating that field.
+              const timedOut = data.reason === "timeout"
+                || /timed out/i.test(String(data.message || ""));
+              track(timedOut ? "decode_timeout" : "decode_failed");
               setState({ phase: "error", message: data.message });
             }
           } catch { /* skip */ }
         }
       }
     } catch (err: unknown) {
+      // A deliberate abort (reset / new analysis) is not a failure.
       if (err instanceof Error && err.name === "AbortError") return;
+      track("decode_failed");
       setState({ phase: "error", message: "Connection failed. Please try again." });
     }
   }, [inputText]);
@@ -163,7 +232,9 @@ export function useDecoder() {
     abortRef.current?.abort();
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(INPUT_STORAGE_KEY);
-    setInputText("");
+    localStorage.removeItem(SOURCE_STORAGE_KEY);
+    inputSourceRef.current = "unknown";
+    setInputTextRaw("");
     setState({ phase: "input" });
   }, []);
 
@@ -183,7 +254,9 @@ export function useDecoder() {
   }, [decode, reset]);
 
   const loadSampleData = useCallback((items: string[]) => {
-    setInputText(items.join("\n"));
+    inputSourceRef.current = "sample";
+    cacheSource("sample");
+    setInputTextRaw(items.join("\n"));
   }, []);
 
   return {

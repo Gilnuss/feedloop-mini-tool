@@ -108,6 +108,10 @@ export function useDecoder() {
 
     const cached = loadCachedResult();
     if (cached) {
+      // Restoring a previous run is NOT reached_results (no run happened),
+      // but the session did see results — it belongs in the denominator of
+      // resultsToTrial, or a later trial click becomes an impossible >100%.
+      track("viewed_cached_results");
       setState({ phase: "results", data: cached });
     } else {
       const cachedInput = loadCachedInput();

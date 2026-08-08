@@ -48,11 +48,12 @@ export async function decodeFeedback(
 
   /**
    * Checked at each stage boundary. The LLM/embedding stages are where the
-   * money goes, so bailing out between them stops most of the waste when a
-   * client disconnects — without threading cancellation into every fetch.
+   * money goes, so bailing out between them stops most of the waste when the
+   * signal fires (client disconnect or route timeout) — without threading
+   * cancellation into every fetch.
    */
   const abortIfClientGone = () => {
-    if (signal?.aborted) throw new Error("Client disconnected");
+    if (signal?.aborted) throw new Error("Pipeline aborted");
   };
 
   // ── Step 1: PII Scrub ──

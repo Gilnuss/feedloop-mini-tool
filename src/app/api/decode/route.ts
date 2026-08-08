@@ -117,25 +117,40 @@ export async function POST(req: NextRequest) {
           }
         };
 
-        // Stop doing paid work for a client that is no longer listening.
-        const abortController = new AbortController();
+        // Stop doing paid work when nobody will see the answer: the pipeline
+        // aborts on EITHER a client disconnect or the 55s timeout (Vercel's
+        // limit is 60s). AbortSignal.any fires when the first of them does,
+        // so a timed-out run no longer keeps making LLM/embedding calls in
+        // the background — and timeouts skew to the biggest, most expensive
+        // inputs.
+        const timeoutSignal = AbortSignal.timeout(PIPELINE_TIMEOUT_MS);
+        const pipelineSignal = AbortSignal.any([req.signal, timeoutSignal]);
         const onClientGone = () => {
           closed = true;
-          abortController.abort();
         };
         req.signal.addEventListener("abort", onClientGone);
 
         try {
-          // Timeout wrapper — abort if pipeline exceeds 55s (Vercel limit is 60s)
           const pipelinePromise = decodeFeedback(
             validation.items,
             (event: ProgressEvent) => {
               send({ type: "progress", ...event });
             },
-            abortController.signal,
+            pipelineSignal,
           );
+          // If the timeout wins the race below, the pipeline promise settles
+          // later (rejecting at its next stage boundary) — swallow that late
+          // rejection so it cannot surface as an unhandled rejection.
+          pipelinePromise.catch(() => {});
+
+          // The race is still needed for promptness: the pipeline only checks
+          // its signal at stage boundaries, which can be many seconds apart.
           const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Pipeline timeout")), PIPELINE_TIMEOUT_MS),
+            timeoutSignal.addEventListener(
+              "abort",
+              () => reject(new Error("Pipeline timeout")),
+              { once: true },
+            ),
           );
 
           const result = await Promise.race([pipelinePromise, timeoutPromise]);

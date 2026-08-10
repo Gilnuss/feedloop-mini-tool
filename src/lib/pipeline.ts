@@ -39,11 +39,22 @@ const KIND_ORDER: Record<string, number> = {
 export async function decodeFeedback(
   rawItems: string[],
   onProgress?: (event: ProgressEvent) => void,
+  signal?: AbortSignal,
 ): Promise<DecodeResult> {
   const runStart = Date.now();
   const { randomUUID } = await import("crypto");
   const runId = randomUUID().slice(0, 12);
   const emit = (event: ProgressEvent) => onProgress?.(event);
+
+  /**
+   * Checked at each stage boundary. The LLM/embedding stages are where the
+   * money goes, so bailing out between them stops most of the waste when the
+   * signal fires (client disconnect or route timeout) — without threading
+   * cancellation into every fetch.
+   */
+  const abortIfClientGone = () => {
+    if (signal?.aborted) throw new Error("Pipeline aborted");
+  };
 
   // ── Step 1: PII Scrub ──
   emit({ stage: "scrubbing", progress: 0 });
@@ -52,6 +63,7 @@ export async function decodeFeedback(
   const scrubMs = Date.now() - scrubStart;
 
   // ── Step 2: Classify + Embed in parallel ──
+  abortIfClientGone();
   emit({ stage: "classifying", progress: 10, detail: `0/${rawItems.length} items...` });
   const parallelStart = Date.now();
 
@@ -77,6 +89,7 @@ export async function decodeFeedback(
   }));
 
   // ── Step 3: Two-Pass Clustering ──
+  abortIfClientGone();
   emit({ stage: "clustering", progress: 65, detail: "Deduplicating + grouping by topic..." });
   const clusterStart = Date.now();
 
@@ -85,6 +98,7 @@ export async function decodeFeedback(
   const clusterMs = Date.now() - clusterStart;
 
   // ── Step 4: Summarize each topic cluster ──
+  abortIfClientGone();
   emit({ stage: "summarizing", progress: 70, detail: `0/${topicClusters.length} topics...` });
   const summarizeStart = Date.now();
 

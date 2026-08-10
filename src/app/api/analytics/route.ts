@@ -9,6 +9,7 @@ import { NextRequest } from "next/server";
 import { timingSafeEqual } from "crypto";
 import { getAllRuns, getRunsSummary } from "@/lib/analytics";
 import { getStoreSize } from "@/lib/resultStore";
+import { getFunnel, summarizeFunnel } from "@/lib/events";
 
 function isAuthorized(key: string | null, expected: string): boolean {
   if (!key) return false;
@@ -35,10 +36,18 @@ export async function GET(req: NextRequest) {
 
   const summaryOnly = req.nextUrl.searchParams.get("summary") === "true";
 
+  // Funnel window, in days. This is the cohort dimension — compare a recent
+  // week against an earlier one to see whether changes actually moved anything.
+  const daysParam = Number(req.nextUrl.searchParams.get("days"));
+  const days = Number.isFinite(daysParam) && daysParam > 0 ? Math.floor(daysParam) : 14;
+
+  const funnelByDay = await getFunnel(days);
+  const funnel = summarizeFunnel(funnelByDay);
+
   if (summaryOnly) {
     const summary = getRunsSummary();
     return new Response(
-      JSON.stringify({ summary, storedResults: getStoreSize() }),
+      JSON.stringify({ summary, funnel, storedResults: getStoreSize() }),
       { headers: { "Content-Type": "application/json" } },
     );
   }
@@ -56,7 +65,7 @@ export async function GET(req: NextRequest) {
   }));
 
   return new Response(
-    JSON.stringify({ summary, storedResults: getStoreSize(), runs: sanitizedRuns }),
+    JSON.stringify({ summary, funnel, funnelByDay, storedResults: getStoreSize(), runs: sanitizedRuns }),
     { headers: { "Content-Type": "application/json" } },
   );
 }

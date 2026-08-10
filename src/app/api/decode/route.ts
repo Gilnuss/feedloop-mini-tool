@@ -14,24 +14,14 @@ import { NextRequest } from "next/server";
 import { randomUUID } from "crypto";
 import { decodeFeedback } from "@/lib/pipeline";
 import { checkRateLimit, validateInput, checkBodySize, getClientIP, sanitizeItem } from "@/lib/rateLimit";
+import { isOriginAllowed } from "@/lib/origins";
 import type { ProgressEvent } from "@/lib/types";
 
 // Next.js edge runtime not needed — we want Node.js for longer execution
 export const maxDuration = 60; // seconds (Vercel serverless)
 export const dynamic = "force-dynamic";
 
-// ── CORS allowed origins ──
-const ALLOWED_ORIGINS = new Set([
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "https://feedloop-mini-tool.vercel.app",
-  "https://decode.feedloop.dev",
-]);
-
-function isOriginAllowed(origin: string | null): boolean {
-  if (!origin) return false;
-  return ALLOWED_ORIGINS.has(origin);
-}
+// CORS allowlist lives in @/lib/origins so /api/decode and /api/events stay in sync.
 
 // ── Pipeline timeout (55s to stay under Vercel's 60s limit) ──
 const PIPELINE_TIMEOUT_MS = 55_000;
@@ -111,20 +101,56 @@ export async function POST(req: NextRequest) {
 
     const stream = new ReadableStream({
       async start(controller) {
+        // The client can vanish at any moment — reload, back button, closed tab,
+        // dev hot-reload. Once that happens the controller is closed and every
+        // further enqueue throws ERR_INVALID_STATE, which used to cascade: the
+        // catch below would try to send an error (throw), then finally would
+        // close an already-closed controller (throw again).
+        let closed = false;
+
         const send = (data: Record<string, unknown>) => {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+          if (closed) return;
+          try {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+          } catch {
+            closed = true; // client went away mid-write
+          }
         };
 
+        // Stop doing paid work when nobody will see the answer: the pipeline
+        // aborts on EITHER a client disconnect or the 55s timeout (Vercel's
+        // limit is 60s). AbortSignal.any fires when the first of them does,
+        // so a timed-out run no longer keeps making LLM/embedding calls in
+        // the background — and timeouts skew to the biggest, most expensive
+        // inputs.
+        const timeoutSignal = AbortSignal.timeout(PIPELINE_TIMEOUT_MS);
+        const pipelineSignal = AbortSignal.any([req.signal, timeoutSignal]);
+        const onClientGone = () => {
+          closed = true;
+        };
+        req.signal.addEventListener("abort", onClientGone);
+
         try {
-          // Timeout wrapper — abort if pipeline exceeds 55s (Vercel limit is 60s)
           const pipelinePromise = decodeFeedback(
             validation.items,
             (event: ProgressEvent) => {
               send({ type: "progress", ...event });
             },
+            pipelineSignal,
           );
+          // If the timeout wins the race below, the pipeline promise settles
+          // later (rejecting at its next stage boundary) — swallow that late
+          // rejection so it cannot surface as an unhandled rejection.
+          pipelinePromise.catch(() => {});
+
+          // The race is still needed for promptness: the pipeline only checks
+          // its signal at stage boundaries, which can be many seconds apart.
           const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Pipeline timeout")), PIPELINE_TIMEOUT_MS),
+            timeoutSignal.addEventListener(
+              "abort",
+              () => reject(new Error("Pipeline timeout")),
+              { once: true },
+            ),
           );
 
           const result = await Promise.race([pipelinePromise, timeoutPromise]);
@@ -144,13 +170,35 @@ export async function POST(req: NextRequest) {
 
           send({ type: "result", data: cleanResult });
         } catch (err) {
-          console.error(`[api/decode] Pipeline error (${requestId}):`, err);
-          const message = err instanceof Error && err.message === "Pipeline timeout"
-            ? "Analysis timed out. Try with fewer items."
-            : "Analysis failed. Please try again.";
-          send({ type: "error", message });
+          const isTimeout = err instanceof Error && err.message === "Pipeline timeout";
+          const clientGone = closed || req.signal.aborted;
+
+          if (clientGone) {
+            // Not a failure worth alerting on — nobody is listening.
+            console.log(`[api/decode] Client disconnected (${requestId}), pipeline aborted`);
+          } else {
+            console.error(`[api/decode] Pipeline error (${requestId}):`, err);
+            // `reason` lets the client tell a timeout from a real failure, so
+            // the funnel can separate the two instead of lumping both into
+            // "user gave up".
+            send({
+              type: "error",
+              reason: isTimeout ? "timeout" : "pipeline",
+              message: isTimeout
+                ? "Analysis timed out. Try with fewer items."
+                : "Analysis failed. Please try again.",
+            });
+          }
         } finally {
-          controller.close();
+          req.signal.removeEventListener("abort", onClientGone);
+          if (!closed) {
+            closed = true;
+            try {
+              controller.close();
+            } catch {
+              /* already closed by the runtime */
+            }
+          }
         }
       },
     });

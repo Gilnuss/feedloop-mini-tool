@@ -50,17 +50,18 @@ function newSession(): StoredSession {
   };
 }
 
-function persist(session: StoredSession): void {
+function persist(session: StoredSession): boolean {
   try {
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    return true;
   } catch {
-    /* ignore */
+    return false;
   }
 }
 
 /**
- * Load-or-rotate. Returns null only when storage is unavailable (private
- * mode) — in which case tracking is skipped entirely rather than failing.
+ * Load-or-rotate. Returns null only when storage is unusable — in which case
+ * tracking is skipped entirely rather than failing.
  */
 function getSession(): { session: StoredSession; isNew: boolean } | null {
   if (typeof window === "undefined") return null;
@@ -70,23 +71,37 @@ function getSession(): { session: StoredSession; isNew: boolean } | null {
 
     const raw = localStorage.getItem(SESSION_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as StoredSession;
-      if (
-        parsed &&
-        typeof parsed.id === "string" &&
-        typeof parsed.createdAt === "number" &&
-        typeof parsed.lastActive === "number" &&
-        now - parsed.lastActive <= IDLE_TIMEOUT_MS &&
-        now - parsed.createdAt <= MAX_SESSION_AGE_MS
-      ) {
-        session = { ...parsed, fired: parsed.fired || {} };
+      // Parse failures are handled HERE, not by the outer catch: a corrupted
+      // record must fall through to newSession() below, whose persist()
+      // overwrites it. Letting the throw escape would return null on every
+      // future call and silently kill tracking in this browser forever.
+      try {
+        const parsed = JSON.parse(raw) as StoredSession;
+        if (
+          parsed &&
+          typeof parsed.id === "string" &&
+          typeof parsed.createdAt === "number" &&
+          typeof parsed.lastActive === "number" &&
+          now - parsed.lastActive <= IDLE_TIMEOUT_MS &&
+          now - parsed.createdAt <= MAX_SESSION_AGE_MS
+        ) {
+          session = { ...parsed, fired: parsed.fired || {} };
+        }
+      } catch {
+        /* corrupted record — replaced below */
       }
     }
 
     const isNew = session === null;
     if (!session) session = newSession();
     session.lastActive = now;
-    persist(session);
+
+    // A brand-new session that cannot be persisted would mint a fresh id on
+    // every call — each event its own "session", landed re-fired every time.
+    // Better no tracking than corrupted tracking.
+    const persisted = persist(session);
+    if (isNew && !persisted) return null;
+
     return { session, isNew };
   } catch {
     return null;
@@ -116,21 +131,37 @@ function post(event: EventName, sessionId: string): void {
  * @param once  Fire at most once per session (e.g. `landed`, which would
  *              otherwise repeat on every reload and under StrictMode's dev
  *              remount).
+ * @param newSessionBackfill
+ *              UI state to re-establish if THIS call rotated the session
+ *              (30-min idle, then an interaction). Mirrors GA4's model: a new
+ *              session starting mid-page fires session_start and its events
+ *              carry the current page context. E.g. the trial CTA passes
+ *              viewed_cached_results — the rotated session demonstrably IS
+ *              looking at results, and without this its click would be a
+ *              false orphan.
  */
-export function track(event: EventName, options: { once?: boolean } = {}): void {
+export function track(
+  event: EventName,
+  options: { once?: boolean; newSessionBackfill?: EventName[] } = {},
+): void {
   if (typeof window === "undefined") return;
 
   const loaded = getSession();
   if (!loaded) return;
   const { session, isNew } = loaded;
 
-  // A session that rotates mid-page (30-min idle on the results screen, then
-  // a click) still "entered" the site — backfill its landed so the new
-  // bucket's denominator exists and the click doesn't become an orphan.
-  if (isNew && event !== "landed" && !session.fired.landed) {
-    session.fired.landed = true;
-    persist(session);
-    post("landed", session.id);
+  // A session that rotates mid-page still "entered" the site — backfill its
+  // landed (GA4's session_start) so the new bucket's denominator exists.
+  if (isNew && event !== "landed") {
+    const backfill: EventName[] = ["landed", ...(options.newSessionBackfill ?? [])];
+    let dirty = false;
+    for (const extra of backfill) {
+      if (extra === event || session.fired[extra]) continue;
+      session.fired[extra] = true;
+      dirty = true;
+      post(extra, session.id);
+    }
+    if (dirty) persist(session);
   }
 
   if (options.once) {

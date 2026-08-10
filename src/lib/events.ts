@@ -262,7 +262,12 @@ export interface DayFunnel {
   /**
    * Sessions that hit a funnel stage without its qualifying step recorded —
    * the data-quality signal that used to surface as an impossible >100% rate.
-   * A persistent nonzero here means an instrumentation gap, not user behavior.
+   * Every known behavioral route is instrumented (fresh runs, cache restores,
+   * and mid-page session rotation, which backfills its landed/saw state — see
+   * track.ts), so the expected residual cause is event delivery loss:
+   * track() is fire-and-forget, and a dropped qualifying event with a landed
+   * conversion event leaves an orphan. Occasional ones are noise; a
+   * persistent or growing count means an uninstrumented route.
    */
   orphans: {
     /** clicked_trial sessions that never saw results: |trial| − |saw ∩ trial| */

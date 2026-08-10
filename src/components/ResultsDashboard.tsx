@@ -200,7 +200,12 @@ export function ResultsDashboard({ result, onReset, onRunAgain, readOnly }: Prop
           // landed/ran_*/reached_results fires, so counting the click there
           // would push resultsToTrial above 1.0. Measuring the share loop needs
           // its own funnel, not this one.
-          onClick={() => { if (!readOnly) track("clicked_trial"); }}
+          // If this click rotated an idled-out session, re-establish the fact
+          // that the visitor is on the results view before counting the click —
+          // otherwise a >30-min think-then-convert becomes a false orphan.
+          onClick={() => {
+            if (!readOnly) track("clicked_trial", { newSessionBackfill: ["viewed_cached_results"] });
+          }}
           className="mt-1 px-7 py-3 bg-purple-600 rounded-lg text-sm font-semibold text-white hover:bg-purple-500 transition-colors">
           Try the full pipeline — 14 days free →
         </a>

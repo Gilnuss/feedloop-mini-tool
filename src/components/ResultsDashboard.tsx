@@ -7,37 +7,64 @@ import { IssueCard } from "./IssueCard";
 import { ShareButton } from "./ShareButton";
 import { track } from "@/lib/track";
 
+/**
+ * Section config. Dot and count-pill colours are tokens from globals.css, spelled
+ * out as literal class strings because Tailwind cannot compose them at runtime.
+ */
 const SECTION_CONFIG = [
-  { kind: "bug_ticket", label: "Bug Tickets", dot: "bg-red-500", countBg: "bg-red-500/15", countText: "text-red-400" },
-  { kind: "feature_ticket", label: "Feature Requests", dot: "bg-yellow-500", countBg: "bg-yellow-500/15", countText: "text-yellow-400" },
-  { kind: "epic", label: "Strategic Epics", dot: "bg-purple-500", countBg: "bg-purple-500/15", countText: "text-purple-400" },
+  { kind: "bug_ticket", label: "Bug Tickets", dot: "bg-kind-bug-dot", pill: "bg-kind-bug-bg text-kind-bug-fg" },
+  { kind: "feature_ticket", label: "Feature Requests", dot: "bg-kind-feature-dot", pill: "bg-kind-feature-bg text-kind-feature-fg" },
+  { kind: "epic", label: "Strategic Epics", dot: "bg-kind-epic-dot", pill: "bg-kind-epic-bg text-kind-epic-fg" },
 ] as const;
 
 const SEVERITY_ORDER = ["critical", "high", "medium", "low"] as const;
-const SEVERITY_STYLES: Record<string, { badge: string; label: string; divider: string }> = {
-  critical: { badge: "bg-red-500", label: "CRITICAL", divider: "text-red-400/60" },
-  high: { badge: "bg-orange-500", label: "HIGH", divider: "text-orange-400/60" },
-  medium: { badge: "bg-yellow-500", label: "MEDIUM", divider: "text-yellow-400/60" },
-  low: { badge: "bg-green-500", label: "LOW", divider: "text-green-400/60" },
+const SEVERITY_PILL: Record<string, { label: string; pill: string; dot: string }> = {
+  critical: { label: "Critical", pill: "bg-sev-critical-bg text-sev-critical-fg", dot: "bg-sev-critical-dot" },
+  high: { label: "High", pill: "bg-sev-high-bg text-sev-high-fg", dot: "bg-sev-high-dot" },
+  medium: { label: "Medium", pill: "bg-sev-medium-bg text-sev-medium-fg", dot: "bg-sev-medium-dot" },
+  low: { label: "Low", pill: "bg-sev-low-bg text-sev-low-fg", dot: "bg-sev-low-dot" },
 };
 
+const UPSELL_BULLETS: [string, string][] = [
+  ["Feedback widget", "embedded on your site — captures user input around the clock"],
+  ["Smart dedup & grouping", "duplicates merged, related items clustered automatically"],
+  ["Clarifying questions", "sent back to users through the widget, turning vague feedback into detail"],
+  ["Full PRDs & root cause", "developer constraints, code analysis, quality-scored tickets"],
+  ["Synced to your CRM", "tickets land in Jira, Linear or GitHub Issues automatically"],
+  ["Coding agent ready", "one click to launch an agent that opens a PR from the ticket"],
+];
+
 function TicketRow({ cluster, isOpen, onToggle }: { cluster: Cluster; isOpen: boolean; onToggle: () => void }) {
+  const severity = SEVERITY_PILL[cluster.severity] || SEVERITY_PILL.low;
+
   return (
-    <div className="border-t border-[#27272A]">
+    <div className="border-t border-line-subtle">
       <button
         onClick={onToggle}
-        className="flex items-start sm:items-center justify-between w-full px-3 sm:px-4 py-2.5 hover:bg-[#1A1A1A]/50 transition-colors gap-2"
+        className={`flex items-start sm:items-center justify-between w-full gap-3 px-4 sm:px-5 py-2.5 text-left transition-colors ${
+          isOpen ? "bg-raised" : "bg-surface hover:bg-raised"
+        }`}
       >
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[13px] text-white text-left line-clamp-2 sm:truncate">{cluster.title}</span>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <span className="text-[11px] font-mono text-zinc-600 whitespace-nowrap">
+        <span className="text-[13.5px] font-medium text-ink line-clamp-2 sm:truncate min-w-0">
+          {cluster.title}
+        </span>
+
+        <span className="flex items-center gap-2 sm:gap-3.5 shrink-0">
+          <span className={`hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-pill text-xs font-semibold ${severity.pill}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${severity.dot}`} />
+            {severity.label}
+          </span>
+          <span className="font-mono text-[11.5px] text-ink-muted whitespace-nowrap">
             {cluster.reportCount} report{cluster.reportCount !== 1 ? "s" : ""}
             {cluster.dedupCount > 0 && ` · ${cluster.dedupCount} dupes`}
           </span>
-          <span className="text-zinc-600 text-xs">{isOpen ? "▲" : "›"}</span>
-        </div>
+          <svg
+            className={`w-3.5 h-3.5 text-ink-muted transition-transform ${isOpen ? "rotate-180" : ""}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </span>
       </button>
       {isOpen && <IssueCard cluster={cluster} inline />}
     </div>
@@ -50,63 +77,56 @@ function TicketSection({ config, clusters }: { config: (typeof SECTION_CONFIG)[n
 
   if (clusters.length === 0) return null;
 
-  // Group clusters by severity
   const bySeverity: Record<string, Cluster[]> = {};
   for (const c of clusters) {
     if (!bySeverity[c.severity]) bySeverity[c.severity] = [];
     bySeverity[c.severity].push(c);
   }
 
-  // Only show severity headers if there are multiple severity levels
-  const severityLevels = SEVERITY_ORDER.filter(s => bySeverity[s]?.length);
+  const severityLevels = SEVERITY_ORDER.filter((s) => bySeverity[s]?.length);
   const showSeverityHeaders = severityLevels.length > 1;
 
   return (
-    <div className="w-full bg-[#141414] border border-[#27272A] rounded-xl overflow-hidden">
-      {/* Section header */}
+    <div className="w-full bg-surface border border-line rounded-card shadow-card overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center justify-between w-full px-4 py-3 bg-[#1A1A1A] hover:bg-[#1F1F1F] transition-colors"
+        className="flex items-center gap-2.5 w-full px-4 sm:px-5 py-2.5 bg-raised hover:bg-line-subtle transition-colors"
       >
-        <div className="flex items-center gap-2.5">
-          <span className={`w-2 h-2 rounded-full ${config.dot}`} />
-          <span className="text-[13px] font-semibold text-white">{config.label}</span>
-          <span className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold ${config.countBg} ${config.countText}`}>
-            {clusters.length}
-          </span>
-        </div>
-        <span className="text-[10px] text-zinc-500">{expanded ? "▼" : "▶"}</span>
+        <span className={`w-[7px] h-[7px] rounded-full ${config.dot}`} />
+        <span className="text-[13.5px] font-semibold text-ink">{config.label}</span>
+        <span className={`px-2 py-0.5 rounded-full font-mono text-[11.5px] font-semibold ${config.pill}`}>
+          {clusters.length}
+        </span>
+        <svg
+          className={`ml-auto w-3.5 h-3.5 text-ink-muted transition-transform ${expanded ? "rotate-180" : ""}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
       </button>
 
-      {/* Tickets grouped by severity */}
       {expanded && (
         <div>
-          {severityLevels.map(severity => {
-            const style = SEVERITY_STYLES[severity];
-            const group = bySeverity[severity];
-            return (
-              <div key={severity}>
-                {/* Severity sub-header */}
-                {showSeverityHeaders && (
-                  <div className="flex items-center gap-2 px-4 py-1.5 border-t border-[#27272A] bg-[#0F0F0F]">
-                    <span className={`w-1.5 h-1.5 rounded-full ${style.badge}`} />
-                    <span className={`text-[10px] font-mono font-semibold tracking-wider ${style.divider}`}>
-                      {style.label} ({group.length})
-                    </span>
-                  </div>
-                )}
-                {/* Ticket rows */}
-                {group.map(cluster => (
-                  <TicketRow
-                    key={cluster.id}
-                    cluster={cluster}
-                    isOpen={expandedTicket === cluster.id}
-                    onToggle={() => setExpandedTicket(expandedTicket === cluster.id ? null : cluster.id)}
-                  />
-                ))}
-              </div>
-            );
-          })}
+          {severityLevels.map((severity) => (
+            <div key={severity}>
+              {showSeverityHeaders && (
+                <div className="flex items-center gap-2 px-4 sm:px-5 py-1.5 border-t border-line-subtle bg-canvas">
+                  <span className={`w-1.5 h-1.5 rounded-full ${SEVERITY_PILL[severity].dot}`} />
+                  <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-muted">
+                    {SEVERITY_PILL[severity].label} ({bySeverity[severity].length})
+                  </span>
+                </div>
+              )}
+              {bySeverity[severity].map((cluster) => (
+                <TicketRow
+                  key={cluster.id}
+                  cluster={cluster}
+                  isOpen={expandedTicket === cluster.id}
+                  onToggle={() => setExpandedTicket(expandedTicket === cluster.id ? null : cluster.id)}
+                />
+              ))}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -132,70 +152,64 @@ export function ResultsDashboard({ result, onReset, onRunAgain, readOnly }: Prop
   ];
 
   return (
-    <div className="flex flex-col items-center gap-6 w-full max-w-[880px]">
+    <div className="flex flex-col items-center gap-4 w-full max-w-[880px]">
       {/* Top bar */}
       {!readOnly && (
-        <div className="flex flex-wrap items-center justify-between gap-3 w-full">
-          <div className="flex items-center gap-2.5">
-            <ShareButton resultId={result.id} />
-            {onRunAgain && (
-              <button
-                onClick={onRunAgain}
-                className="flex items-center gap-2 px-3.5 py-2 bg-[#1A1A1A] border border-[#27272A] rounded-lg text-sm text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Run again
-              </button>
-            )}
-          </div>
-          <button onClick={onReset} className="text-sm text-purple-400 hover:text-purple-300 transition-colors">
-            ← New analysis
+        <div className="flex flex-wrap items-center gap-2.5 w-full">
+          <ShareButton resultId={result.id} />
+          {onRunAgain && (
+            <button
+              onClick={onRunAgain}
+              className="flex items-center gap-2 px-3.5 py-2 bg-surface border border-line rounded-control text-[13px] font-semibold text-ink-dim hover:text-ink hover:bg-raised transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Run again
+            </button>
+          )}
+          <button
+            onClick={onReset}
+            className="ml-auto px-1 py-2 text-[13px] font-semibold text-signal hover:text-signal-hover transition-colors"
+          >
+            New analysis
           </button>
         </div>
       )}
 
-      {/* Stats */}
       <StatsBoxes stats={result.stats} />
 
-      {/* CRM-style ticket sections */}
       {sections.map(({ config, clusters }) => (
         <TicketSection key={config.kind} config={config} clusters={clusters} />
       ))}
 
       {/* Upsell */}
-      <div className="w-full border border-dashed border-[#27272A] rounded-xl p-4 sm:p-6 flex flex-col items-center gap-5 bg-[#141414]">
-        <p className="text-sm font-medium text-zinc-300 text-center">
+      <div className="w-full border border-dashed border-line rounded-card bg-surface px-5 py-5 sm:px-6 flex flex-col items-center gap-4">
+        <p className="text-sm font-semibold text-ink text-center">
           This was a one-time snapshot. With the full pipeline, this runs continuously:
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl text-[13px] text-zinc-500">
-          <div className="flex items-start gap-2.5">
-            <span className="text-purple-400 mt-0.5">✦</span>
-            <span><strong className="text-zinc-300">Feedback widget</strong> embedded on your site — captures user input 24/7</span>
-          </div>
-          <div className="flex items-start gap-2.5">
-            <span className="text-purple-400 mt-0.5">✦</span>
-            <span><strong className="text-zinc-300">Smart dedup & grouping</strong> — duplicates merged, related items clustered automatically</span>
-          </div>
-          <div className="flex items-start gap-2.5">
-            <span className="text-purple-400 mt-0.5">✦</span>
-            <span><strong className="text-zinc-300">Clarifying questions</strong> sent back to users through the widget — turns vague feedback into actionable details</span>
-          </div>
-          <div className="flex items-start gap-2.5">
-            <span className="text-purple-400 mt-0.5">✦</span>
-            <span><strong className="text-zinc-300">Full PRDs & root cause</strong> — developer constraints, code analysis, quality-scored tickets</span>
-          </div>
-          <div className="flex items-start gap-2.5">
-            <span className="text-purple-400 mt-0.5">✦</span>
-            <span><strong className="text-zinc-300">Synced to your CRM</strong> — tickets land in Jira, Linear, or GitHub Issues automatically</span>
-          </div>
-          <div className="flex items-start gap-2.5">
-            <span className="text-purple-400 mt-0.5">✦</span>
-            <span><strong className="text-zinc-300">Coding agent ready</strong> — one click to launch an AI agent that opens a PR from the ticket</span>
-          </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5 w-full max-w-[640px]">
+          {UPSELL_BULLETS.map(([title, rest]) => (
+            <div key={title} className="flex items-start gap-2.5">
+              <svg className="w-3.5 h-3.5 text-signal mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-[12.5px] leading-relaxed text-ink-dim">
+                <strong className="text-ink font-semibold">{title}</strong> — {rest}
+              </span>
+            </div>
+          ))}
         </div>
-        <a href="https://feedloop.dev" target="_blank" rel="noopener noreferrer"
+
+        {/* Original destination, kept here so restoring it is a copy-paste:
+              href="https://feedloop.dev" target="_blank" rel="noopener noreferrer"
+              label: "Try the full pipeline — 14 days free →"
+            Swap back once feedloop.dev can actually start a trial. The label
+            changed with it: promising "14 days free" while the only thing on
+            offer is a waitlist is the kind of small lie a technical buyer
+            notices, and it is not worth the click it buys. */}
+        <a href="/full"
           // Only from a run the visitor performed. On a shared /r/[id] page no
           // landed/ran_*/reached_results fires, so counting the click there
           // would push resultsToTrial above 1.0. Measuring the share loop needs
@@ -206,16 +220,25 @@ export function ResultsDashboard({ result, onReset, onRunAgain, readOnly }: Prop
           onClick={() => {
             if (!readOnly) track("clicked_trial", { newSessionBackfill: ["viewed_cached_results"] });
           }}
-          className="mt-1 px-7 py-3 bg-purple-600 rounded-lg text-sm font-semibold text-white hover:bg-purple-500 transition-colors">
-          Try the full pipeline — 14 days free →
+          className="mt-1 flex items-center gap-2 px-5 py-2.5 bg-signal rounded-control text-[13px] font-semibold text-white shadow-card hover:bg-signal-hover transition-colors">
+          See the full pipeline →
         </a>
       </div>
 
       {/* Footer */}
-      <div className="flex items-center gap-4 text-xs text-zinc-600">
+      <div className="flex flex-wrap items-center justify-center gap-2.5 py-1 text-xs text-ink-muted">
         <span>Decoded by FeedLoop</span>
         <span>·</span>
-        <a href="https://github.com/feedloop" target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:text-purple-300">
+        {/* FIXME(link): github.com/feedloop is NOT ours. It is an unrelated
+            Indonesian company (feedloop.ai) with ~20 repos — Batiq, Qore SDK,
+            Envoy, Qhronos — none of them a self-hostable feedback tool.
+
+            So this footer makes a claim we cannot honor AND sends warm traffic
+            to a namesake. Highest priority of the three link TODOs: the other
+            two point at our own empty page, this one points at someone else's
+            company. Repoint to the real org once it exists, or drop the
+            self-host claim until there is something to self-host. */}
+        <a href="https://github.com/feedloop" target="_blank" rel="noopener noreferrer" className="text-signal hover:text-signal-hover">
           Self-host for free: github.com/feedloop
         </a>
       </div>

@@ -8,6 +8,7 @@
  */
 
 import type { ReactNode } from "react";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 export function DecodeTopbar({
   right,
@@ -33,6 +34,8 @@ export function DecodeTopbar({
 
       <div className="ml-auto flex items-center gap-3.5">
         {right}
+
+        <ThemeToggle />
 
         {/* TODO(domain): feedloop.dev is the PRODUCT app (login/dashboard), not a
             marketing site — as of Aug 2026 it still serves the bare Vite scaffold,

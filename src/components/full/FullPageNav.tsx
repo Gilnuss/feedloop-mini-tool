@@ -11,6 +11,7 @@
  */
 
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 export function FullPageNav() {
   return (
@@ -35,9 +36,11 @@ export function FullPageNav() {
         <a href="#pricing" className="hidden sm:inline text-[13px] text-ink-dim hover:text-ink transition-colors">
           Pricing
         </a>
+
+        <ThemeToggle />
         <a
           href="#talk-to-us"
-          className="px-3.5 py-1.5 bg-signal rounded-control text-[13px] font-semibold text-white shadow-card hover:bg-signal-hover transition-colors"
+          className="px-3.5 py-1.5 bg-signal rounded-control text-[13px] font-semibold text-signal-on shadow-card hover:bg-signal-hover transition-colors"
         >
           Talk to us
         </a>

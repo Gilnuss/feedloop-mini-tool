@@ -93,7 +93,7 @@ export default function Home() {
               <p className="text-sm text-ink-dim text-center">{state.message}</p>
               <button
                 onClick={reset}
-                className="px-5 py-2.5 bg-signal rounded-control text-sm font-semibold text-white hover:bg-signal-hover transition-colors"
+                className="px-5 py-2.5 bg-signal rounded-control text-sm font-semibold text-signal-on hover:bg-signal-hover transition-colors"
               >
                 Try again
               </button>

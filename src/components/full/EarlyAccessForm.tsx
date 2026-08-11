@@ -109,7 +109,7 @@ export function EarlyAccessForm() {
           <button
             type="submit"
             disabled={!canSubmit}
-            className="w-full px-5 py-2.5 bg-signal rounded-control text-[13px] font-semibold text-white shadow-card hover:bg-signal-hover disabled:opacity-45 disabled:cursor-not-allowed transition-colors"
+            className="w-full px-5 py-2.5 bg-signal rounded-control text-[13px] font-semibold text-signal-on shadow-card hover:bg-signal-hover disabled:opacity-45 disabled:cursor-not-allowed transition-colors"
           >
             {status === "submitting" ? "Sending..." : "Request a quote →"}
           </button>

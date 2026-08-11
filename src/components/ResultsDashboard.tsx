@@ -220,7 +220,7 @@ export function ResultsDashboard({ result, onReset, onRunAgain, readOnly }: Prop
           onClick={() => {
             if (!readOnly) track("clicked_trial", { newSessionBackfill: ["viewed_cached_results"] });
           }}
-          className="mt-1 flex items-center gap-2 px-5 py-2.5 bg-signal rounded-control text-[13px] font-semibold text-white shadow-card hover:bg-signal-hover transition-colors">
+          className="mt-1 flex items-center gap-2 px-5 py-2.5 bg-signal rounded-control text-[13px] font-semibold text-signal-on shadow-card hover:bg-signal-hover transition-colors">
           See the full pipeline →
         </a>
       </div>

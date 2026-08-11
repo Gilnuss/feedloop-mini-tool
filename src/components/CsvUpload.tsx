@@ -200,7 +200,7 @@ export function CsvUpload({ onItemsSelected }: Props) {
                 </button>
                 <button
                   onClick={handleConfirm}
-                  className="flex-1 sm:flex-initial px-4 py-2 bg-signal rounded-control text-[13px] font-semibold text-white shadow-card hover:bg-signal-hover transition-colors"
+                  className="flex-1 sm:flex-initial px-4 py-2 bg-signal rounded-control text-[13px] font-semibold text-signal-on shadow-card hover:bg-signal-hover transition-colors"
                 >
                   Decode {getItemCount()} items →
                 </button>

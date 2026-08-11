@@ -31,7 +31,7 @@ function PricingTierCard({ tier }: { tier: PricingTier }) {
       className={`relative flex flex-col gap-4 bg-surface border ${borderStyle} rounded-card shadow-card p-5`}
     >
       {tier.isRecommended && (
-        <span className="absolute -top-2.5 left-5 px-2 py-0.5 rounded-full bg-signal text-[10px] font-mono uppercase tracking-wider text-white">
+        <span className="absolute -top-2.5 left-5 px-2 py-0.5 rounded-full bg-signal text-[10px] font-mono uppercase tracking-wider text-signal-on">
           Recommended
         </span>
       )}
@@ -68,7 +68,7 @@ function PricingTierCard({ tier }: { tier: PricingTier }) {
         href="#early-access"
         className={`mt-auto flex items-center justify-center px-4 py-2.5 rounded-control text-sm font-semibold transition-colors ${
           tier.isRecommended
-            ? "bg-signal text-white hover:bg-signal-hover shadow-card"
+            ? "bg-signal text-signal-on hover:bg-signal-hover shadow-card"
             : "bg-surface border border-line text-ink-dim hover:text-ink hover:bg-raised"
         }`}
       >

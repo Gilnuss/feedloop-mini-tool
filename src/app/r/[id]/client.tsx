@@ -31,7 +31,7 @@ export function SharedResultClient({ id }: { id: string }) {
         right={
           <a
             href="/"
-            className="px-3.5 py-1.5 bg-signal rounded-control text-[13px] font-semibold text-white shadow-card hover:bg-signal-hover transition-colors"
+            className="px-3.5 py-1.5 bg-signal rounded-control text-[13px] font-semibold text-signal-on shadow-card hover:bg-signal-hover transition-colors"
           >
             Decode your own feedback
           </a>
@@ -57,7 +57,7 @@ export function SharedResultClient({ id }: { id: string }) {
             <p className="text-sm text-ink-dim text-center">{error}</p>
             <a
               href="/"
-              className="px-5 py-2.5 bg-signal rounded-control text-[13px] font-semibold text-white shadow-card hover:bg-signal-hover transition-colors"
+              className="px-5 py-2.5 bg-signal rounded-control text-[13px] font-semibold text-signal-on shadow-card hover:bg-signal-hover transition-colors"
             >
               Decode your own feedback →
             </a>
@@ -93,7 +93,7 @@ export function SharedResultClient({ id }: { id: string }) {
               </div>
               <a
                 href="/"
-                className="sm:ml-auto px-4.5 py-2.5 bg-signal rounded-control text-[13px] font-semibold text-white shadow-card hover:bg-signal-hover transition-colors whitespace-nowrap"
+                className="sm:ml-auto px-4.5 py-2.5 bg-signal rounded-control text-[13px] font-semibold text-signal-on shadow-card hover:bg-signal-hover transition-colors whitespace-nowrap"
               >
                 Try Decode →
               </a>

@@ -13,6 +13,19 @@
    like one product. When tokens.scss moves, update THIS block and nothing
    else, then rebuild — every screen follows.
 
+   ⚠️ THREE LIGHT-THEME VALUES DELIBERATELY DIVERGE from tokens.scss, because
+   the originals fail WCAG AA at the sizes this app uses them:
+
+     signal      #0d9488 → #0f766e   white button text and link text: 3.74 → 5.47
+     ink-dim     #6b7280 → #4b5563   (moved to keep the scale distinct)
+     ink-muted   #9ca3af → #6b7280   counters and footers: 2.43 → 4.63
+
+   These are worth pushing back upstream rather than carrying as a local patch —
+   the dashboard has the same problem wherever it puts white on #0d9488 or
+   normal-size text in #9ca3af. If tokens.scss is fixed, delete this note and
+   re-sync. If it is deliberately left alone, this divergence is intentional and
+   must survive the next sync.
+
    Tailwind v4 turns each `--color-x` below into utilities automatically:
      --color-signal      →  bg-signal   text-signal   border-signal
      --radius-card       →  rounded-card
@@ -36,14 +49,24 @@
   --color-line: #e5e7eb;
   --color-line-subtle: #f3f4f6;
 
-  /* ── Text ── */
+  /* ── Text ──
+     The whole scale is shifted one step darker than tokens.scss. At the
+     original values ink-muted was #9ca3af — 2.43:1 on the canvas, a clear AA
+     failure for the counters, footers and meta text it is used on. Darkening
+     only that tier would have collapsed it into ink-dim, so all three moved and
+     the hierarchy survives: 16.98 / 7.23 / 4.63, every one passing. */
   --color-ink: #111827;
-  --color-ink-dim: #6b7280;
-  --color-ink-muted: #9ca3af;
+  --color-ink-dim: #4b5563;
+  --color-ink-muted: #6b7280;
 
-  /* ── Accent ── */
-  --color-signal: #0d9488;
-  --color-signal-hover: #0f766e;
+  /* ── Accent ──
+     Also one step darker than tokens.scss (#0d9488 → teal-700). At #0d9488,
+     white button text AND signal-coloured link text both sat at 3.74:1, which
+     only passes as large text — and neither is large. #0f766e takes both to
+     5.47:1 in one change, so hover steps down to teal-800 to stay distinct.
+     Dark mode is unaffected; its brighter #14b8a6 already passes. */
+  --color-signal: #0f766e;
+  --color-signal-hover: #115e59;
   /**
    * Text and icons sitting ON a signal-filled surface. Must be declared here,
    * not only under .dark — Tailwind generates the `text-signal-on` utility from
@@ -143,7 +166,9 @@
   /* ── Text ── */
   --color-ink: #e9ebef;
   --color-ink-dim: #9aa1ac;
-  --color-ink-muted: #6c7482;
+  /* Lifted from #6c7482, which was 4.01:1 on the dark canvas — the same AA
+     miss the light theme had, just less severe. Now 5.01:1. */
+  --color-ink-muted: #7b8493;
 
   /* ── Accent ── */
   --color-signal: #14b8a6;

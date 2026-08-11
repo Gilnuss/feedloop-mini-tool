@@ -58,7 +58,11 @@ function SamplePicker({
       {/* Backdrop (mobile) */}
       <div className="fixed inset-0 bg-ink/20 z-40 sm:hidden" onClick={onDismiss} />
 
-      <div className="fixed bottom-0 left-0 right-0 sm:absolute sm:bottom-auto sm:top-full sm:left-0 sm:right-auto sm:mt-1.5 w-full sm:w-72 bg-surface border-t sm:border border-line rounded-t-card sm:rounded-card shadow-pop z-50 overflow-hidden">
+      {/* Opens UPWARD on desktop (sm:bottom-full). The trigger already sits near
+          the bottom of the viewport, so dropping the list down pushed it under
+          the fold and forced a scroll just to read three options. On mobile it
+          stays a bottom sheet, which has the same effect for the same reason. */}
+      <div className="fixed bottom-0 left-0 right-0 sm:absolute sm:top-auto sm:bottom-full sm:left-0 sm:right-auto sm:mb-1.5 w-full sm:w-72 bg-surface border-t sm:border border-line rounded-t-card sm:rounded-card shadow-pop z-50 overflow-hidden">
         <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-line-subtle">
           <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted">
             Real product reviews
@@ -198,7 +202,7 @@ export function FeedbackInput({
         <button
           onClick={onDecode}
           disabled={!canDecode}
-          className="w-full sm:w-auto sm:ml-auto flex items-center justify-center gap-2 px-4.5 py-2.5 bg-signal rounded-control text-[13px] font-semibold text-white shadow-card hover:bg-signal-hover disabled:opacity-45 disabled:cursor-not-allowed transition-colors"
+          className="w-full sm:w-auto sm:ml-auto flex items-center justify-center gap-2 px-4.5 py-2.5 bg-signal rounded-control text-[13px] font-semibold text-signal-on shadow-card hover:bg-signal-hover disabled:opacity-45 disabled:cursor-not-allowed transition-colors"
         >
           Decode my feedback →
         </button>

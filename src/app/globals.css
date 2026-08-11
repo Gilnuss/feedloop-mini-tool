@@ -1,34 +1,119 @@
 @import "tailwindcss";
 
-:root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-}
+/* ═══════════════════════════════════════════════════════════════════════
+   THE ONE PLACE COLOURS LIVE.
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+   Every colour in this app resolves to a token defined below. No component
+   should contain a hex code, an rgb(), or a stock Tailwind colour utility
+   (`bg-zinc-900`, `text-purple-400`). If you find one, it is a bug — it will
+   not follow when this file changes, which defeats the point of this block.
+
+   Source of truth: apps/dashboard/src/styles/tokens.scss. These values were
+   lifted from the product dashboard so the mini-tool and the real app look
+   like one product. When tokens.scss moves, update THIS block and nothing
+   else, then rebuild — every screen follows.
+
+   Tailwind v4 turns each `--color-x` below into utilities automatically:
+     --color-signal      →  bg-signal   text-signal   border-signal
+     --radius-card       →  rounded-card
+     --shadow-card       →  shadow-card
+
+   Naming is by ROLE, not by appearance, so a future dark mode or a rebrand
+   is a change of values here rather than a rename everywhere:
+     canvas / surface / raised   page, card, inset backgrounds
+     ink / ink-dim / ink-muted   primary, secondary, tertiary text
+     line / line-subtle          borders
+     signal / signal-*           the accent (teal) and its soft variants
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* ── Surfaces ── */
+  --color-canvas: #f9fafb;
+  --color-surface: #ffffff;
+  --color-raised: #f3f4f6;
+
+  /* ── Borders ── */
+  --color-line: #e5e7eb;
+  --color-line-subtle: #f3f4f6;
+
+  /* ── Text ── */
+  --color-ink: #111827;
+  --color-ink-dim: #6b7280;
+  --color-ink-muted: #9ca3af;
+
+  /* ── Accent ── */
+  --color-signal: #0d9488;
+  --color-signal-hover: #0f766e;
+  --color-signal-bg: #f0fdfa;
+  --color-signal-subtle: #ccfbf1;
+  --color-signal-border: #99f6e4;
+  --color-signal-text: #134e4a;
+
+  --color-danger: #dc2626;
+
+  /* ── Ticket kinds — one triple per section of the results dashboard ── */
+  --color-kind-bug-dot: #ef4444;
+  --color-kind-bug-bg: #fef2f2;
+  --color-kind-bug-fg: #b91c1c;
+
+  --color-kind-feature-dot: #8b5cf6;
+  --color-kind-feature-bg: #f5f3ff;
+  --color-kind-feature-fg: #6d28d9;
+
+  --color-kind-epic-dot: #14b8a6;
+  --color-kind-epic-bg: #ccfbf1;
+  --color-kind-epic-fg: #134e4a;
+
+  /* ── Severity — mirrors the dashboard's P0–P3 priority palette ── */
+  --color-sev-critical-dot: #ef4444;
+  --color-sev-critical-bg: #fef2f2;
+  --color-sev-critical-fg: #b91c1c;
+
+  --color-sev-high-dot: #f97316;
+  --color-sev-high-bg: #fff7ed;
+  --color-sev-high-fg: #c2410c;
+
+  --color-sev-medium-dot: #f59e0b;
+  --color-sev-medium-bg: #fffbeb;
+  --color-sev-medium-fg: #b45309;
+
+  --color-sev-low-dot: #9ca3af;
+  --color-sev-low-bg: #f9fafb;
+  --color-sev-low-fg: #4b5563;
+
+  /* ── Radii — the dashboard is tighter than stock Tailwind ── */
+  --radius-pill: 4px;
+  --radius-control: 6px;
+  --radius-panel: 8px;
+  --radius-card: 10px;
+
+  /* ── Elevation — one card shadow, deliberately almost invisible ── */
+  --shadow-card: 0 1px 2px rgba(17, 24, 39, 0.04);
+  --shadow-pop: 0 8px 24px rgba(17, 24, 39, 0.1);
+
+  /* ── Type ── */
+  --font-sans: var(--font-geist-sans), "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), "Menlo", "Monaco", "Courier New", monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
 }
 
-/* Smooth scrollbar for dark theme */
+/* Light, unobtrusive scrollbar to match the dashboard chrome. */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--color-line);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--color-ink-muted);
 }

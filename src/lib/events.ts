@@ -68,6 +68,14 @@ export const EVENT_NAMES = [
   "decode_timeout",
   "rate_limited",
   "clicked_trial",
+  /**
+   * The real terminal step while feedloop.dev is still being built. clicked_trial
+   * measures departures toward a trial that cannot yet be started; this measures
+   * someone handing over a way to reach them, which is both a costlier signal and
+   * an outcome we can act on. Swap the headline metric back to trial conversion
+   * once the app ships — keep both, they answer different questions.
+   */
+  "email_submitted",
 ] as const;
 
 export type EventName = (typeof EVENT_NAMES)[number];
@@ -249,6 +257,8 @@ export interface DayCardinalities {
   ranAndFailed: number;
   /** |sawResults ∩ clicked_trial| */
   sawAndTrial: number;
+  /** |sawResults ∩ email_submitted| */
+  sawAndEmail: number;
 }
 
 export interface DayFunnel {
@@ -274,6 +284,15 @@ export interface DayFunnel {
     trialClicks: number;
     /** runs with no landed: |ranAny| − |landed ∩ ranAny| */
     runsWithoutLanded: number;
+    /**
+     * email_submitted sessions that never saw results: |email| − |saw ∩ email|.
+     * Expected to be non-zero for a legitimate reason the other two orphans do
+     * not have — /full is a linkable page, so someone can arrive from a shared
+     * link and sign up without ever running a decode. Read this as a channel
+     * mix signal rather than as delivery loss, and if it grows large the answer
+     * is a separate funnel for direct /full traffic, not a fix here.
+     */
+    emailsWithoutResults: number;
   };
   /** Events whose day-stamp was rejected and clamped to the write day. */
   bucketClamped: number;
@@ -290,6 +309,9 @@ export interface DayFunnel {
     /** Of sessions that saw results (fresh run or cache-restore), how many
      *  clicked through to the trial. */
     resultsToTrial: number | null;
+    /** Of sessions that saw results, how many left an email. The metric to
+     *  steer on until there is a real trial behind the trial CTA. */
+    resultsToEmail: number | null;
   };
 }
 
@@ -317,6 +339,7 @@ function buildRates(
     runToResults: ratio(sets.ranAndSaw, sets.ranAny),
     runToFailure: ratio(sets.ranAndFailed, sets.ranAny),
     resultsToTrial: ratio(sets.sawAndTrial, sets.sawResults),
+    resultsToEmail: ratio(sets.sawAndEmail, sets.sawResults),
   };
 }
 
@@ -327,6 +350,7 @@ function buildOrphans(
   return {
     trialClicks: Math.max(0, unique.clicked_trial - sets.sawAndTrial),
     runsWithoutLanded: Math.max(0, sets.ranAny - sets.landedAndRan),
+    emailsWithoutResults: Math.max(0, unique.email_submitted - sets.sawAndEmail),
   };
 }
 
@@ -365,6 +389,7 @@ function memoryCardinalities(entry: MemoryDay | undefined): DayCardinalities {
     ranAndSaw: interCard(ran, saw),
     ranAndFailed: interCard(ran, failed),
     sawAndTrial: interCard(saw, get("clicked_trial")),
+    sawAndEmail: interCard(saw, get("email_submitted")),
   };
 }
 
@@ -376,9 +401,9 @@ function memoryCardinalities(entry: MemoryDay | undefined): DayCardinalities {
  *   3× (SUNIONSTORE + EXPIRE) for the ran/failed/saw union scratch keys
  *      — SUNIONSTORE returns the union's cardinality directly, unlike SUNION,
  *        which would ship every member over the REST transport just to count.
- *   4× SINTERCARD for the intersection numerators
+ *   5× SINTERCARD for the intersection numerators
  */
-const CMDS_PER_DAY = 1 + EVENT_NAMES.length + 6 + 4;
+const CMDS_PER_DAY = 1 + EVENT_NAMES.length + 6 + 5;
 
 /**
  * Read the funnel for the last `days` UTC days, oldest first.
@@ -439,6 +464,7 @@ export async function getFunnel(days: number = 14): Promise<DayFunnel[]> {
       pipeline.sintercard([ranScratch, sawScratch]);
       pipeline.sintercard([ranScratch, failedScratch]);
       pipeline.sintercard([sawScratch, uniqueKey(day, "clicked_trial")]);
+      pipeline.sintercard([sawScratch, uniqueKey(day, "email_submitted")]);
     }
     const raw = (await pipeline.exec()) as unknown[];
 
@@ -465,6 +491,7 @@ export async function getFunnel(days: number = 14): Promise<DayFunnel[]> {
         ranAndSaw: num(7),
         ranAndFailed: num(8),
         sawAndTrial: num(9),
+        sawAndEmail: num(10),
       };
 
       return {
@@ -504,9 +531,10 @@ export function summarizeFunnel(funnel: DayFunnel[]) {
     ranAndSaw: 0,
     ranAndFailed: 0,
     sawAndTrial: 0,
+    sawAndEmail: 0,
   };
   let bucketClamped = 0;
-  const orphans = { trialClicks: 0, runsWithoutLanded: 0 };
+  const orphans = { trialClicks: 0, runsWithoutLanded: 0, emailsWithoutResults: 0 };
 
   for (const day of funnel) {
     for (const name of EVENT_NAMES) {
@@ -518,6 +546,7 @@ export function summarizeFunnel(funnel: DayFunnel[]) {
     }
     orphans.trialClicks += day.orphans.trialClicks;
     orphans.runsWithoutLanded += day.orphans.runsWithoutLanded;
+    orphans.emailsWithoutResults += day.orphans.emailsWithoutResults;
     bucketClamped += day.bucketClamped;
   }
 

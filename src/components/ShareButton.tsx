@@ -30,12 +30,12 @@ export function ShareButton({ resultId }: { resultId: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-2 px-3.5 py-2 bg-[#1A1A1A] border border-[#27272A] rounded-lg text-sm text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
+      className="flex items-center gap-2 px-3.5 py-2 bg-surface border border-line rounded-control text-[13px] font-semibold text-ink-dim hover:text-ink hover:bg-raised transition-colors"
     >
       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
       </svg>
-      {copied ? "Copied!" : "Share"}
+      {copied ? "Copied!" : "Copy share link"}
     </button>
   );
 }

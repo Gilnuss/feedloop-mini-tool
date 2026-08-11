@@ -1,34 +1,258 @@
 @import "tailwindcss";
 
-:root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+/* ═══════════════════════════════════════════════════════════════════════
+   THE ONE PLACE COLOURS LIVE.
+
+   Every colour in this app resolves to a token defined below. No component
+   should contain a hex code, an rgb(), or a stock Tailwind colour utility
+   (`bg-zinc-900`, `text-purple-400`). If you find one, it is a bug — it will
+   not follow when this file changes, which defeats the point of this block.
+
+   Source of truth: apps/dashboard/src/styles/tokens.scss. These values were
+   lifted from the product dashboard so the mini-tool and the real app look
+   like one product. When tokens.scss moves, update THIS block and nothing
+   else, then rebuild — every screen follows.
+
+   ⚠️ THREE LIGHT-THEME VALUES DELIBERATELY DIVERGE from tokens.scss, because
+   the originals fail WCAG AA at the sizes this app uses them:
+
+     signal      #0d9488 → #0f766e   white button text and link text: 3.74 → 5.47
+     ink-dim     #6b7280 → #4b5563   (moved to keep the scale distinct)
+     ink-muted   #9ca3af → #6b7280   counters and footers: 2.43 → 4.63
+
+   These are worth pushing back upstream rather than carrying as a local patch —
+   the dashboard has the same problem wherever it puts white on #0d9488 or
+   normal-size text in #9ca3af. If tokens.scss is fixed, delete this note and
+   re-sync. If it is deliberately left alone, this divergence is intentional and
+   must survive the next sync.
+
+   Tailwind v4 turns each `--color-x` below into utilities automatically:
+     --color-signal      →  bg-signal   text-signal   border-signal
+     --radius-card       →  rounded-card
+     --shadow-card       →  shadow-card
+
+   Naming is by ROLE, not by appearance, so a future dark mode or a rebrand
+   is a change of values here rather than a rename everywhere:
+     canvas / surface / raised   page, card, inset backgrounds
+     ink / ink-dim / ink-muted   primary, secondary, tertiary text
+     line / line-subtle          borders
+     signal / signal-*           the accent (teal) and its soft variants
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@theme {
+  /* ── Surfaces ── */
+  --color-canvas: #f9fafb;
+  --color-surface: #ffffff;
+  --color-raised: #f3f4f6;
+
+  /* ── Borders ── */
+  --color-line: #e5e7eb;
+  --color-line-subtle: #f3f4f6;
+
+  /* ── Text ──
+     The whole scale is shifted one step darker than tokens.scss. At the
+     original values ink-muted was #9ca3af — 2.43:1 on the canvas, a clear AA
+     failure for the counters, footers and meta text it is used on. Darkening
+     only that tier would have collapsed it into ink-dim, so all three moved and
+     the hierarchy survives: 16.98 / 7.23 / 4.63, every one passing. */
+  --color-ink: #111827;
+  --color-ink-dim: #4b5563;
+  --color-ink-muted: #6b7280;
+
+  /* ── Accent ──
+     Also one step darker than tokens.scss (#0d9488 → teal-700). At #0d9488,
+     white button text AND signal-coloured link text both sat at 3.74:1, which
+     only passes as large text — and neither is large. #0f766e takes both to
+     5.47:1 in one change, so hover steps down to teal-800 to stay distinct.
+     Dark mode is unaffected; its brighter #14b8a6 already passes. */
+  --color-signal: #0f766e;
+  --color-signal-hover: #115e59;
+  /**
+   * Text and icons sitting ON a signal-filled surface. Must be declared here,
+   * not only under .dark — Tailwind generates the `text-signal-on` utility from
+   * this @theme block, so a token that exists only in the dark scope would
+   * produce no class at all.
+   */
+  --color-signal-on: #ffffff;
+  --color-signal-bg: #f0fdfa;
+  --color-signal-subtle: #ccfbf1;
+  --color-signal-border: #99f6e4;
+  --color-signal-text: #134e4a;
+
+  --color-danger: #dc2626;
+
+  /* ── Ticket kinds — one triple per section of the results dashboard ── */
+  --color-kind-bug-dot: #ef4444;
+  --color-kind-bug-bg: #fef2f2;
+  --color-kind-bug-fg: #b91c1c;
+
+  --color-kind-feature-dot: #8b5cf6;
+  --color-kind-feature-bg: #f5f3ff;
+  --color-kind-feature-fg: #6d28d9;
+
+  --color-kind-epic-dot: #14b8a6;
+  --color-kind-epic-bg: #ccfbf1;
+  --color-kind-epic-fg: #134e4a;
+
+  /* ── Severity — mirrors the dashboard's P0–P3 priority palette ── */
+  --color-sev-critical-dot: #ef4444;
+  --color-sev-critical-bg: #fef2f2;
+  --color-sev-critical-fg: #b91c1c;
+
+  --color-sev-high-dot: #f97316;
+  --color-sev-high-bg: #fff7ed;
+  --color-sev-high-fg: #c2410c;
+
+  --color-sev-medium-dot: #f59e0b;
+  --color-sev-medium-bg: #fffbeb;
+  --color-sev-medium-fg: #b45309;
+
+  --color-sev-low-dot: #9ca3af;
+  --color-sev-low-bg: #f9fafb;
+  --color-sev-low-fg: #4b5563;
+
+  /* ── Radii — the dashboard is tighter than stock Tailwind ── */
+  --radius-pill: 4px;
+  --radius-control: 6px;
+  --radius-panel: 8px;
+  --radius-card: 10px;
+
+  /* ── Elevation — one card shadow, deliberately almost invisible ── */
+  --shadow-card: 0 1px 2px rgba(17, 24, 39, 0.04);
+  --shadow-pop: 0 8px 24px rgba(17, 24, 39, 0.1);
+
+  /* ── Type ── */
+  --font-sans: var(--font-geist-sans), "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), "Menlo", "Monaco", "Courier New", monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ═══════════════════════════════════════════════════════════════════════
+   DARK MODE — the same role table, with dark values.
+
+   This works because the @theme block above is a plain `@theme`, not
+   `@theme inline`: Tailwind compiles bg-canvas to `background-color:
+   var(--color-canvas)`, so re-declaring the variable under .dark re-points
+   every utility already in the markup. No component edits, no dark: prefixes.
+
+   Declared ONCE. There is deliberately no duplicate copy of these values in a
+   `prefers-color-scheme` media query — that would put every hex in two places
+   and break the one rule this file exists to enforce. Following the OS is
+   handled by the inline script in layout.tsx, which reads the media query and
+   sets the class. One source of truth, same behaviour.
+
+   Values are not the light palette inverted. Three deliberate departures:
+     · Surfaces step UP from the canvas (#0f1115 → #16181d → #1e2127) the way
+       they step DOWN in light. Borders stay visible but never brighter than
+       dimmed text, or the UI reads as a wireframe.
+     · signal brightens 0d9488 → 14b8a6 to clear 4.5:1 on the dark canvas, and
+       its soft variants become translucent tints rather than pale washes — a
+       #f0fdfa panel on a dark canvas glows.
+     · signal-on flips to near-black. White on #14b8a6 is about 2.5:1 and fails;
+       the light theme keeps white on the darker #0d9488, which passes.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+.dark {
+  /* ── Surfaces ── */
+  --color-canvas: #0f1115;
+  --color-surface: #16181d;
+  --color-raised: #1e2127;
+
+  /* ── Borders ── */
+  --color-line: #2a2f37;
+  --color-line-subtle: #22262d;
+
+  /* ── Text ── */
+  --color-ink: #e9ebef;
+  --color-ink-dim: #9aa1ac;
+  /* Lifted from #6c7482, which was 4.01:1 on the dark canvas — the same AA
+     miss the light theme had, just less severe. Now 5.01:1. */
+  --color-ink-muted: #7b8493;
+
+  /* ── Accent ── */
+  --color-signal: #14b8a6;
+  --color-signal-hover: #2dd4bf;
+  --color-signal-bg: rgba(20, 184, 166, 0.1);
+  --color-signal-subtle: rgba(20, 184, 166, 0.2);
+  --color-signal-border: rgba(45, 212, 191, 0.32);
+  --color-signal-text: #5eead4;
+  --color-signal-on: #04211e;
+
+  --color-danger: #f87171;
+
+  /* ── Ticket kinds ── */
+  --color-kind-bug-dot: #f87171;
+  --color-kind-bug-bg: rgba(239, 68, 68, 0.14);
+  --color-kind-bug-fg: #fca5a5;
+
+  --color-kind-feature-dot: #a78bfa;
+  --color-kind-feature-bg: rgba(139, 92, 246, 0.16);
+  --color-kind-feature-fg: #c4b5fd;
+
+  --color-kind-epic-dot: #2dd4bf;
+  --color-kind-epic-bg: rgba(20, 184, 166, 0.16);
+  --color-kind-epic-fg: #5eead4;
+
+  /* ── Severity ── */
+  --color-sev-critical-dot: #f87171;
+  --color-sev-critical-bg: rgba(239, 68, 68, 0.14);
+  --color-sev-critical-fg: #fca5a5;
+
+  --color-sev-high-dot: #fb923c;
+  --color-sev-high-bg: rgba(249, 115, 22, 0.14);
+  --color-sev-high-fg: #fdba74;
+
+  --color-sev-medium-dot: #fbbf24;
+  --color-sev-medium-bg: rgba(245, 158, 11, 0.14);
+  --color-sev-medium-fg: #fcd34d;
+
+  --color-sev-low-dot: #9aa1ac;
+  --color-sev-low-bg: rgba(154, 161, 172, 0.12);
+  --color-sev-low-fg: #c3c9d2;
+
+  /* Radii and type are appearance-independent — not redeclared. */
+
+  color-scheme: dark; /* native form controls, scrollbars, caret */
+}
+
+/**
+ * Shadows cannot be re-pointed the way colours can.
+ *
+ * Tailwind compiles --shadow-card into `--tw-shadow: 0 1px 2px #1118270a` with
+ * the colour BAKED IN — `var(--shadow-card)` appears zero times in the output,
+ * and --tw-shadow-color is registered `@property { inherits: false }`, so it
+ * cannot be set from an ancestor either. Re-declaring --shadow-card under .dark
+ * silently does nothing.
+ *
+ * So the utilities are overridden directly. Keep these in sync with the
+ * --shadow-* tokens above if those ever change.
+ */
+.dark .shadow-card {
+  --tw-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+.dark .shadow-pop {
+  --tw-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
 }
 
-/* Smooth scrollbar for dark theme */
+/* Light, unobtrusive scrollbar to match the dashboard chrome. */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--color-line);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--color-ink-muted);
 }

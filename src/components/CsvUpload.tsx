@@ -73,9 +73,9 @@ export function CsvUpload({ onItemsSelected }: Props) {
       {/* Upload button */}
       <button
         onClick={() => fileRef.current?.click()}
-        className="flex items-center gap-2 px-4 py-2.5 bg-[#1A1A1A] border border-[#27272A] rounded-lg text-sm text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
+        className="flex items-center gap-2 px-3.5 py-2 bg-surface border border-line rounded-control text-[13px] font-semibold text-ink-dim hover:text-ink hover:bg-raised transition-colors"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
         </svg>
         Upload CSV
@@ -90,14 +90,14 @@ export function CsvUpload({ onItemsSelected }: Props) {
 
       {/* Column picker modal */}
       {csvState && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-[560px] mx-4 max-h-[90vh] overflow-y-auto bg-[#141414] border border-[#27272A] rounded-2xl p-5 sm:p-7 flex flex-col gap-5 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 backdrop-blur-sm">
+          <div className="w-full max-w-[560px] mx-4 max-h-[90vh] overflow-y-auto bg-surface border border-line rounded-card shadow-pop p-5 sm:p-7 flex flex-col gap-5">
             {/* Header */}
             <div>
-              <h3 className="text-lg font-semibold text-white">
+              <h3 className="text-[17px] font-semibold text-ink">
                 Your CSV has {csvState.columns.length} columns
               </h3>
-              <p className="text-sm text-zinc-400 mt-1">
+              <p className="text-sm text-ink-dim mt-1">
                 Which column contains the feedback text?
               </p>
             </div>
@@ -114,29 +114,29 @@ export function CsvUpload({ onItemsSelected }: Props) {
                     onClick={() =>
                       setCsvState({ ...csvState, selectedColumn: col })
                     }
-                    className={`flex items-center gap-3 w-full rounded-lg px-3.5 py-2.5 text-left transition-colors ${
+                    className={`flex items-center gap-3 w-full rounded-control px-3.5 py-2.5 text-left border transition-colors ${
                       isSelected
-                        ? "bg-purple-600 border-2 border-purple-500"
-                        : "bg-[#1A1A1A] border border-[#27272A] hover:border-zinc-600"
+                        ? "bg-signal-bg border-signal-border"
+                        : "bg-surface border-line hover:bg-raised"
                     }`}
                   >
                     {/* Radio */}
                     <div
                       className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                        isSelected
-                          ? "border-white bg-white"
-                          : "border-zinc-600"
+                        isSelected ? "border-signal" : "border-line"
                       }`}
                     >
                       {isSelected && (
-                        <div className="w-2 h-2 rounded-full bg-purple-600" />
+                        <div className="w-2 h-2 rounded-full bg-signal" />
                       )}
                     </div>
 
                     {/* Column name */}
                     <span
                       className={`font-mono text-[13px] ${
-                        isSelected ? "text-white font-semibold" : "text-zinc-400"
+                        isSelected
+                          ? "text-signal-text font-semibold"
+                          : "text-ink-dim"
                       }`}
                     >
                       {col}
@@ -145,7 +145,7 @@ export function CsvUpload({ onItemsSelected }: Props) {
                     {/* Preview value */}
                     <span
                       className={`text-xs truncate ${
-                        isSelected ? "text-white/70" : "text-zinc-600"
+                        isSelected ? "text-signal-text/70" : "text-ink-muted"
                       }`}
                     >
                       &ldquo;{getPreview(col)}&rdquo;
@@ -153,7 +153,7 @@ export function CsvUpload({ onItemsSelected }: Props) {
 
                     {/* Auto-detected badge */}
                     {isSelected && isDetected && (
-                      <span className="ml-auto shrink-0 px-2 py-0.5 rounded bg-white/20 text-[10px] font-medium text-white">
+                      <span className="ml-auto shrink-0 px-2 py-0.5 rounded-pill bg-signal-subtle text-[10px] font-semibold text-signal-text">
                         Auto-detected
                       </span>
                     )}
@@ -164,12 +164,12 @@ export function CsvUpload({ onItemsSelected }: Props) {
 
             {/* Preview */}
             <div className="flex flex-col gap-2">
-              <p className="text-xs text-zinc-500">
-                Preview (first 3 of {getItemCount()} items):
-              </p>
-              <div className="bg-[#0D0D0D] rounded-lg p-3 flex flex-col gap-1.5">
+              <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted">
+                Preview · first 3 of {getItemCount()} items
+              </span>
+              <div className="bg-raised border border-line-subtle rounded-control p-3 flex flex-col gap-1.5">
                 {csvState.rows.slice(0, 3).map((row, i) => (
-                  <p key={i} className="text-xs text-zinc-400">
+                  <p key={i} className="text-xs text-ink-dim">
                     {i + 1}. &ldquo;
                     {(row[csvState.selectedColumn] || "").length > 80
                       ? (row[csvState.selectedColumn] || "").slice(0, 80) + "..."
@@ -178,7 +178,7 @@ export function CsvUpload({ onItemsSelected }: Props) {
                   </p>
                 ))}
                 {csvState.rows.length > 3 && (
-                  <p className="text-[11px] text-zinc-600">
+                  <p className="text-[11px] text-ink-muted">
                     ... +{csvState.rows.length - 3} more items
                   </p>
                 )}
@@ -187,20 +187,20 @@ export function CsvUpload({ onItemsSelected }: Props) {
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <span className="text-[11px] font-mono text-zinc-600">
+              <span className="font-mono text-[11px] text-ink-muted">
                 {csvState.fileName} · {csvState.rows.length} rows ·{" "}
                 {csvState.columns.length} columns
               </span>
               <div className="flex gap-2.5 w-full sm:w-auto">
                 <button
                   onClick={() => setCsvState(null)}
-                  className="flex-1 sm:flex-initial px-4 py-2 bg-[#1A1A1A] border border-[#27272A] rounded-lg text-sm text-zinc-400 hover:text-white transition-colors"
+                  className="flex-1 sm:flex-initial px-4 py-2 bg-surface border border-line rounded-control text-[13px] font-semibold text-ink-dim hover:text-ink hover:bg-raised transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleConfirm}
-                  className="flex-1 sm:flex-initial px-5 py-2 bg-purple-600 rounded-lg text-sm font-semibold text-white hover:bg-purple-500 transition-colors"
+                  className="flex-1 sm:flex-initial px-4 py-2 bg-signal rounded-control text-[13px] font-semibold text-signal-on shadow-card hover:bg-signal-hover transition-colors"
                 >
                   Decode {getItemCount()} items →
                 </button>
